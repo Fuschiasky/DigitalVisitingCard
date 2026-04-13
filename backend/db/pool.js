@@ -10,6 +10,8 @@ const pool = mysql.createPool({
   database:           process.env.DB_NAME     || 'profilelink',
   charset:            'utf8mb4',
 
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : undefined,
+
   // Pool settings tuned for high concurrency
   connectionLimit:    parseInt(process.env.DB_POOL_LIMIT || '20', 10),
   queueLimit:         0,                    // unlimited queue
