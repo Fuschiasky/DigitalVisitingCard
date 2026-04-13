@@ -1,0 +1,423 @@
+'use strict';
+
+/* ── State ── */
+var accessToken  = '';
+var refreshToken = '';
+var editingSlug  = null;
+var deletingSlug = null;
+
+/* ── DOM helpers ── */
+function $(id) { return document.getElementById(id); }
+
+function esc(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function showErr(id, msg) {
+  var el = $(id);
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function hideMsg(id) {
+  var el = $(id);
+  if (el) el.style.display = 'none';
+}
+
+function showToast(msg, type) {
+  var t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast toast-' + (type || 'ok') + ' show';
+  setTimeout(function() { t.className = 'toast'; }, 3000);
+}
+
+/* ── API wrapper with auto token refresh ── */
+function api(method, path, body, isJson) {
+  if (isJson === undefined) isJson = true;
+
+  var opts = {
+    method: method,
+    headers: { 'Authorization': 'Bearer ' + accessToken },
+    credentials: 'omit',
+  };
+
+  if (body && isJson) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  } else if (body) {
+    opts.body = body;
+  }
+
+  return fetch(path, opts).then(function(res) {
+    if (res.status === 401 && refreshToken) {
+      return fetch('/api/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: refreshToken }),
+      }).then(function(r) {
+        if (r.ok) {
+          return r.json().then(function(d) {
+            accessToken  = d.accessToken;
+            refreshToken = d.refreshToken;
+            opts.headers['Authorization'] = 'Bearer ' + accessToken;
+            return fetch(path, opts);
+          });
+        } else {
+          logout();
+          return null;
+        }
+      });
+    }
+    return res;
+  });
+}
+
+/* ── Login ── */
+function doLogin() {
+  var btn  = $('login-btn');
+  var user = $('l-user').value.trim();
+  var pass = $('l-pass').value;
+
+  hideMsg('login-err');
+
+  if (!user || !pass) {
+    showErr('login-err', 'Please enter username and password.');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+
+  fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: user, password: pass }),
+    credentials: 'omit',
+  })
+  .then(function(res) {
+    return res.json().then(function(data) {
+      return { ok: res.ok, data: data };
+    });
+  })
+  .then(function(result) {
+    if (!result.ok) {
+      showErr('login-err', result.data.error || 'Login failed');
+      return;
+    }
+    accessToken  = result.data.accessToken;
+    refreshToken = result.data.refreshToken;
+    $('login-screen').style.display = 'none';
+    $('app').style.display = 'flex';
+    $('topbar-user').textContent = result.data.username;
+    loadProfiles();
+  })
+  .catch(function() {
+    showErr('login-err', 'Network error. Is the server running?');
+  })
+  .finally(function() {
+    btn.disabled = false;
+    btn.textContent = 'Sign In';
+  });
+}
+
+/* ── Logout ── */
+function logout() {
+  if (refreshToken) {
+    fetch('/api/auth/logout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken: refreshToken }),
+      credentials: 'omit',
+    }).catch(function() {});
+  }
+  accessToken = '';
+  refreshToken = '';
+  $('app').style.display = 'none';
+  $('login-screen').style.display = 'flex';
+  $('l-pass').value = '';
+}
+
+/* ── Load and render profile list ── */
+function loadProfiles() {
+  api('GET', '/api/admin/profiles')
+  .then(function(res) {
+    if (!res) return;
+    return res.json().then(function(data) {
+      if (!res.ok) { showErr('err-banner', data.error); return; }
+      renderTable(data.profiles);
+    });
+  })
+  .catch(function() {
+    showErr('err-banner', 'Failed to load profiles.');
+  });
+}
+
+function renderTable(profiles) {
+  var tbody = $('profile-list');
+  var empty = $('empty-state');
+
+  if (!profiles || !profiles.length) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  var origin = location.origin;
+  var rows = '';
+
+  for (var i = 0; i < profiles.length; i++) {
+    var p        = profiles[i];
+    var initials = ((p.first_name || '')[0] || '') + ((p.last_name || '')[0] || '');
+    initials     = initials.toUpperCase();
+    var profileUrl = origin + '/p/' + p.slug;
+    var shortUrl   = '/p/' + p.slug.slice(0, 8) + '…';
+
+    rows += '<tr data-slug="' + esc(p.slug) + '">'
+      + '<td><div class="avatar-sm">' + esc(initials) + '</div></td>'
+      + '<td><strong>' + esc(p.first_name) + ' ' + esc(p.last_name) + '</strong></td>'
+      + '<td style="color:var(--text-dim)">' + esc(p.designation) + '</td>'
+      + '<td>' + esc(p.phone_primary) + '</td>'
+      + '<td><span class="badge ' + (p.is_active ? 'badge-active' : 'badge-inactive') + '">'
+      +   (p.is_active ? 'Active' : 'Inactive') + '</span></td>'
+      + '<td><span class="url-chip" data-url="' + esc(profileUrl) + '" title="' + esc(profileUrl) + '">&#128203; ' + esc(shortUrl) + '</span></td>'
+      + '<td><div class="actions">'
+      +   '<button class="btn btn-ghost btn-sm edit-btn" data-slug="' + esc(p.slug) + '">Edit</button>'
+      +   '<button class="btn btn-danger btn-sm delete-btn" data-slug="' + esc(p.slug) + '">Delete</button>'
+      + '</div></td>'
+      + '</tr>';
+  }
+
+  tbody.innerHTML = rows;
+
+  /* Attach edit / delete / copy via event delegation */
+  tbody.querySelectorAll('.edit-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() { openModal(this.dataset.slug); });
+  });
+  tbody.querySelectorAll('.delete-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() { openDeleteModal(this.dataset.slug); });
+  });
+  tbody.querySelectorAll('.url-chip').forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      navigator.clipboard.writeText(this.dataset.url)
+        .then(function() { showToast('URL copied!'); })
+        .catch(function() { showToast('Could not copy', 'err'); });
+    });
+  });
+}
+
+/* ── Create / Edit modal ── */
+function openModal(slug) {
+  editingSlug = slug || null;
+  hideMsg('modal-err');
+  hideMsg('modal-ok');
+  $('modal-title').textContent = slug ? 'Edit Profile' : 'New Profile';
+  $('photo-section').style.display = slug ? 'block' : 'none';
+  clearForm();
+
+  if (slug) {
+    api('GET', '/api/admin/profiles')
+    .then(function(res) {
+      if (!res) return;
+      return res.json().then(function(d) {
+        var p = (d.profiles || []).find(function(x) { return x.slug === slug; });
+        if (p) {
+          $('m-fname').value = p.first_name    || '';
+          $('m-lname').value = p.last_name     || '';
+          $('m-desg').value  = p.designation   || '';
+          $('m-ph1').value   = p.phone_primary || '';
+          $('m-ph2').value   = p.phone_2       || '';
+          $('m-ph3').value   = p.phone_3       || '';
+        }
+      });
+    });
+  }
+
+  $('profile-modal').classList.add('open');
+  setTimeout(function() { $('m-fname').focus(); }, 100);
+}
+
+function closeModal() {
+  $('profile-modal').classList.remove('open');
+  editingSlug = null;
+  $('photo-input').value = '';
+  $('photo-zone').className = 'photo-zone';
+  $('photo-zone-text').textContent = 'Click to upload photo';
+}
+
+function clearForm() {
+  ['m-fname','m-lname','m-desg','m-ph1','m-ph2','m-ph3'].forEach(function(id) {
+    $(id).value = '';
+  });
+}
+
+function saveProfile() {
+  hideMsg('modal-err');
+  hideMsg('modal-ok');
+
+  var btn = $('modal-save');
+  var payload = {
+    first_name:    $('m-fname').value.trim(),
+    last_name:     $('m-lname').value.trim(),
+    designation:   $('m-desg').value.trim(),
+    phone_primary: $('m-ph1').value.trim(),
+    phone_2:       $('m-ph2').value.trim() || null,
+    phone_3:       $('m-ph3').value.trim() || null,
+  };
+
+  if (!payload.first_name || !payload.last_name || !payload.designation || !payload.phone_primary) {
+    showErr('modal-err', 'Please fill in all required fields (*).');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  var method     = editingSlug ? 'PUT'  : 'POST';
+  var apiPath    = editingSlug ? '/api/admin/profiles/' + editingSlug : '/api/admin/profiles';
+  var savedSlug  = editingSlug;
+
+  api(method, apiPath, payload)
+  .then(function(res) {
+    if (!res) return;
+    return res.json().then(function(data) {
+      if (!res.ok) {
+        showErr('modal-err', (data.errors || [data.error]).join(', '));
+        return;
+      }
+
+      savedSlug = savedSlug || (data.profile && data.profile.slug);
+
+      var file = $('photo-input').files[0];
+      if (file && savedSlug) {
+        var fd = new FormData();
+        fd.append('photo', file);
+        return api('POST', '/api/admin/profiles/' + savedSlug + '/photo', fd, false)
+        .then(function(pr) {
+          if (pr && !pr.ok) {
+            return pr.json().then(function(pd) {
+              showErr('modal-err', 'Profile saved but photo failed: ' + pd.error);
+            });
+          }
+        });
+      }
+    });
+  })
+  .then(function() {
+    showToast(editingSlug ? 'Profile updated ✓' : 'Profile created ✓');
+    loadProfiles();
+    if (editingSlug) {
+      closeModal();
+    } else {
+      var okEl = $('modal-ok');
+      okEl.textContent = 'Profile created! Copy the URL from the table for your QR code.';
+      okEl.style.display = 'block';
+    }
+  })
+  .catch(function() {
+    showErr('modal-err', 'Network error. Please try again.');
+  })
+  .finally(function() {
+    btn.disabled = false;
+    btn.textContent = 'Save Profile';
+  });
+}
+
+/* ── Photo upload ── */
+function handlePhotoFile(file) {
+  if (!['image/jpeg','image/png','image/webp'].includes(file.type)) {
+    showErr('modal-err', 'Only JPEG, PNG, or WebP images allowed.');
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    showErr('modal-err', 'Image must be smaller than 5 MB.');
+    return;
+  }
+  $('photo-zone').className = 'photo-zone has-file';
+  $('photo-zone-text').textContent = '✓ ' + file.name;
+  var dt = new DataTransfer();
+  dt.items.add(file);
+  $('photo-input').files = dt.files;
+}
+
+/* ── Delete modal ── */
+function openDeleteModal(slug) {
+  deletingSlug = slug;
+  $('delete-modal').classList.add('open');
+}
+
+function doDelete() {
+  if (!deletingSlug) return;
+  var btn = $('del-confirm');
+  btn.disabled = true;
+  btn.textContent = 'Deleting…';
+
+  api('DELETE', '/api/admin/profiles/' + deletingSlug)
+  .then(function(res) {
+    if (res && res.ok) {
+      showToast('Profile deleted');
+      $('delete-modal').classList.remove('open');
+      deletingSlug = null;
+      loadProfiles();
+    } else {
+      showToast('Delete failed', 'err');
+    }
+  })
+  .catch(function() { showToast('Network error', 'err'); })
+  .finally(function() {
+    btn.disabled = false;
+    btn.textContent = 'Delete';
+  });
+}
+
+/* ── Wire up all event listeners once DOM is ready ── */
+document.addEventListener('DOMContentLoaded', function() {
+
+  $('login-btn').addEventListener('click', doLogin);
+  $('l-pass').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') doLogin();
+  });
+
+  $('logout-btn').addEventListener('click', logout);
+  $('new-profile-btn').addEventListener('click', function() { openModal(null); });
+
+  $('modal-cancel').addEventListener('click', closeModal);
+  $('profile-modal').addEventListener('click', function(e) {
+    if (e.target === $('profile-modal')) closeModal();
+  });
+  $('modal-save').addEventListener('click', saveProfile);
+
+  $('del-cancel').addEventListener('click', function() {
+    deletingSlug = null;
+    $('delete-modal').classList.remove('open');
+  });
+  $('del-confirm').addEventListener('click', doDelete);
+
+  var photoZone  = $('photo-zone');
+  var photoInput = $('photo-input');
+
+  photoZone.addEventListener('click', function() { photoInput.click(); });
+  photoZone.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' || e.key === ' ') photoInput.click();
+  });
+  photoZone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    photoZone.style.borderColor = 'var(--gold)';
+  });
+  photoZone.addEventListener('dragleave', function() {
+    photoZone.style.borderColor = '';
+  });
+  photoZone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    photoZone.style.borderColor = '';
+    if (e.dataTransfer.files[0]) handlePhotoFile(e.dataTransfer.files[0]);
+  });
+  photoInput.addEventListener('change', function() {
+    if (photoInput.files[0]) handlePhotoFile(photoInput.files[0]);
+  });
+
+});
