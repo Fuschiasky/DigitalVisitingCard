@@ -63,23 +63,24 @@ app.use(express.urlencoded({ extended: false, limit: '50kb' }));
 //  Static: uploaded photos
 //  Served at /uploads/:filename — no directory listing
 // ─────────────────────────────────────────────
-app.use('/uploads', publicLimiter, (req, res, next) => {
-  // Prevent path traversal
-  const requested = path.resolve(UPLOAD_DIR, path.basename(req.path));
-  if (!requested.startsWith(UPLOAD_DIR)) {
-    return res.status(400).end();
-  }
-  next();
-}, express.static(UPLOAD_DIR, {
-  index:    false,
-  dotfiles: 'deny',
-  maxAge:   '7d',
-  etag:     true,
-  setHeaders: (res) => {
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
-  },
-}));
+// USE THIS WHEN USING LOCAL STORAGE AND NOT IN CLOUDINARY
+// app.use('/uploads', publicLimiter, (req, res, next) => {
+//   // Prevent path traversal
+//   const requested = path.resolve(UPLOAD_DIR, path.basename(req.path));
+//   if (!requested.startsWith(UPLOAD_DIR)) {
+//     return res.status(400).end();
+//   }
+//   next();
+// }, express.static(UPLOAD_DIR, {
+//   index:    false,
+//   dotfiles: 'deny',
+//   maxAge:   '7d',
+//   etag:     true,
+//   setHeaders: (res) => {
+//     res.setHeader('X-Content-Type-Options', 'nosniff');
+//     res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+//   },
+// }));
 
 // ─────────────────────────────────────────────
 //  API routes

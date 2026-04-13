@@ -13,7 +13,7 @@ const helmetConfig = helmet({
       defaultSrc:     ["'self'"],
       scriptSrc:      ["'self'"],
       styleSrc:       ["'self'", "'unsafe-inline'"],   // allow inline styles for avatar colour
-      imgSrc:         ["'self'", 'data:'],
+      imgSrc:         ["'self'", 'data:', 'https://res.cloudinary.com'],
       connectSrc:     ["'self'"],
       fontSrc:        ["'self'", 'https://fonts.gstatic.com'],
       objectSrc:      ["'none'"],

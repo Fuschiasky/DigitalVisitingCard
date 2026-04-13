@@ -185,13 +185,14 @@ router.post(
         return res.status(404).json({ error: 'Profile not found' });
       }
 
-      // Remove old photo
-      if (rows[0].photo_path) {
-        const old = path.join(UPLOAD_DIR, path.basename(rows[0].photo_path));
-        fs.unlink(old, () => {});
-      }
+      // Remove old photo - Used when running locally with file paths in DB. If storing full path in DB, this is not needed as the new upload will overwrite the old file.
+      // if (rows[0].photo_path) {
+      //   const old = path.join(UPLOAD_DIR, path.basename(rows[0].photo_path));
+      //   fs.unlink(old, () => {});
+      // }
 
-      const photoPath = `/uploads/${req.file.filename}`;
+      //const photoPath = `/uploads/${req.file.filename}`; Used when running locally
+      const photoPath = req.file.path;
       await pool.query('UPDATE profiles SET photo_path = ? WHERE slug = ?', [photoPath, slug]);
 
       await pool.query(
