@@ -2,7 +2,7 @@
 
 const jwt    = require('jsonwebtoken');
 const crypto = require('crypto');
-const pool   = require('../db/pool');
+const { query, sql } = require('../db/pool');
 
 const ACCESS_SECRET  = process.env.JWT_ACCESS_SECRET;
 const REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
@@ -32,22 +32,31 @@ async function storeRefreshToken(adminId, token) {
   const hash    = crypto.createHash('sha256').update(token).digest('hex');
   const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-  // Prune old tokens for this admin (keep last 5)
-  await pool.query(
-    `DELETE FROM refresh_tokens
-     WHERE admin_id = ?
-       AND id NOT IN (
-         SELECT id FROM (
-           SELECT id FROM refresh_tokens WHERE admin_id = ? ORDER BY created_at DESC LIMIT 4
-         ) AS t
-       )`,
-    [adminId, adminId]
+  // Prune old tokens for this admin (keep last 4)
+  await query(`
+    DELETE FROM refresh_tokens
+    WHERE admin_id = @adminId
+      AND id NOT IN (
+        SELECT TOP 4 id
+        FROM refresh_tokens
+        WHERE admin_id = @adminId2
+        ORDER BY created_at DESC
+      )
+  `, {
+    adminId:  { type: sql.Int, value: adminId },
+    adminId2: { type: sql.Int, value: adminId },
+  });
+
+  await query(
+    `INSERT INTO refresh_tokens (admin_id, token_hash, expires_at)
+     VALUES (@adminId, @hash, @expires)`,
+    {
+      adminId:  { type: sql.Int,       value: adminId },
+      hash:     { type: sql.NVarChar,  value: hash },
+      expires:  { type: sql.DateTime2, value: expires },
+    }
   );
 
-  await pool.query(
-    'INSERT INTO refresh_tokens (admin_id, token_hash, expires_at) VALUES (?, ?, ?)',
-    [adminId, hash, expires]
-  );
   return hash;
 }
 
@@ -62,7 +71,7 @@ function requireAuth(req, res, next) {
   const token = authHeader.slice(7);
   try {
     const payload = jwt.verify(token, ACCESS_SECRET, { algorithms: ['HS256'] });
-    req.admin    = payload;
+    req.admin     = payload;
     next();
   } catch (err) {
     if (err.name === 'TokenExpiredError') {
@@ -76,21 +85,25 @@ function requireAuth(req, res, next) {
 //  Validate refresh token from DB
 // ─────────────────────────────────────────────
 async function validateRefreshToken(token) {
-  const hash = crypto.createHash('sha256').update(token).digest('hex');
-  const [rows] = await pool.query(
-    `SELECT rt.admin_id, a.username
-     FROM refresh_tokens rt
-     JOIN admins a ON a.id = rt.admin_id
-     WHERE rt.token_hash = ?
-       AND rt.expires_at > NOW()`,
-    [hash]
-  );
+  const hash   = crypto.createHash('sha256').update(token).digest('hex');
+  const result = await query(`
+    SELECT rt.admin_id, a.username
+    FROM refresh_tokens rt
+    JOIN admins a ON a.id = rt.admin_id
+    WHERE rt.token_hash = @hash
+      AND rt.expires_at > GETUTCDATE()
+  `, { hash: { type: sql.NVarChar, value: hash } });
+
+  const rows = result.recordset;
   if (!rows.length) return null;
   return { adminId: rows[0].admin_id, username: rows[0].username, hash };
 }
 
 async function revokeRefreshToken(hash) {
-  await pool.query('DELETE FROM refresh_tokens WHERE token_hash = ?', [hash]);
+  await query(
+    'DELETE FROM refresh_tokens WHERE token_hash = @hash',
+    { hash: { type: sql.NVarChar, value: hash } }
+  );
 }
 
 module.exports = {
