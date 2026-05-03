@@ -5,73 +5,66 @@ const path   = require('path');
 const crypto = require('crypto');
 const fs     = require('fs');
 
-const UPLOAD_DIR  = path.join(__dirname, '..', 'uploads');
-const MAX_SIZE    = 5 * 1024 * 1024;   // 5 MB
+// Upload directory
+const UPLOAD_DIR = path.join(__dirname, '..', '..', 'frontend', 'public', 'uploads');
 
-// Ensure upload directory exists with restricted permissions
+// Create uploads directory if it doesn't exist
 if (!fs.existsSync(UPLOAD_DIR)) {
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true, mode: 0o750 });
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
 
-// Allowed MIME types
-const ALLOWED_MIMES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+console.log('[UPLOAD] Directory:', UPLOAD_DIR);
 
-// Magic bytes validation (defence-in-depth — don't trust MIME alone)
-const MAGIC = {
-  'image/jpeg': [0xFF, 0xD8, 0xFF],
-  'image/png':  [0x89, 0x50, 0x4E, 0x47],
-  'image/webp': [0x52, 0x49, 0x46, 0x46],   // RIFF....WEBP
-};
-
-function checkMagicBytes(buffer, mime) {
-  const bytes = MAGIC[mime];
-  if (!bytes) return false;
-  for (let i = 0; i < bytes.length; i++) {
-    if (buffer[i] !== bytes[i]) return false;
-  }
-  return true;
-}
-
+// Configure multer storage
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
-  filename:    (req, file, cb) => {
-    const ext      = path.extname(file.originalname).toLowerCase().replace(/[^.a-z]/g, '');
-    const safeName = crypto.randomBytes(24).toString('hex') + ext;
-    cb(null, safeName);
+  destination: (req, file, cb) => {
+    cb(null, UPLOAD_DIR);
+  },
+  filename: (req, file, cb) => {
+    // Generate unique filename
+    const hash = crypto.randomBytes(32).toString('hex');
+    const ext = path.extname(file.originalname);
+    const filename = hash + ext;
+    cb(null, filename);
   },
 });
 
 const upload = multer({
   storage,
-  limits: { fileSize: MAX_SIZE, files: 1 },
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (req, file, cb) => {
-    if (!ALLOWED_MIMES.has(file.mimetype)) {
-      return cb(new Error('Only JPEG, PNG, and WebP images are allowed'), false);
+    // Whitelist MIME types
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowed.includes(file.mimetype)) {
+      return cb(new Error('Invalid file type. Only JPEG, PNG, WebP allowed.'));
     }
     cb(null, true);
   },
 });
 
-// Second-pass magic byte check after multer saves the file
+// Verify uploaded file
 function verifyUploadedFile(req, res, next) {
-  if (!req.file) return next();
-
-  const filePath = req.file.path;
-  const buf      = Buffer.alloc(12);
-  let   fd;
-
-  try {
-    fd = fs.openSync(filePath, 'r');
-    fs.readSync(fd, buf, 0, 12, 0);
-    fs.closeSync(fd);
-  } catch {
-    fs.unlinkSync(filePath);
-    return res.status(400).json({ error: 'Could not read uploaded file' });
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
   }
 
-  if (!checkMagicBytes(buf, req.file.mimetype)) {
-    fs.unlinkSync(filePath);
-    return res.status(400).json({ error: 'File content does not match declared type' });
+  // Check magic bytes (prevent uploading renamed executables)
+  const fd = fs.openSync(req.file.path, 'r');
+  const buffer = Buffer.alloc(12);
+  fs.readSync(fd, buffer, 0, 12, 0);
+  fs.closeSync(fd);
+
+  const hex = buffer.toString('hex');
+  const validSignatures = [
+    'ffd8ff',           // JPEG
+    '89504e47',         // PNG
+    '52494646',         // WebP (RIFF)
+  ];
+
+  const isValid = validSignatures.some(sig => hex.startsWith(sig));
+  if (!isValid) {
+    fs.unlink(req.file.path, () => {});
+    return res.status(400).json({ error: 'Invalid image file' });
   }
 
   next();

@@ -224,17 +224,23 @@ router.post(
 
       const profile = existing.recordset[0];
 
-      // Remove old photo file if local storage
+      // Remove old photo file if exists
       if (profile.photo_path && UPLOAD_DIR) {
         const old = path.join(UPLOAD_DIR, path.basename(profile.photo_path));
         fs.unlink(old, () => {});
       }
 
-      // Cloudinary returns full URL in req.file.path; local disk uses filename
-      const photoPath = req.file.path || `/uploads/${req.file.filename}`;
+      // IMPORTANT: Store URL path, not file path
+      const photoPath = `/uploads/${req.file.filename}`;
 
+      console.log('[ADMIN] File saved to:', req.file.path);
+      console.log('[ADMIN] Storing URL path:', photoPath);
+
+      // Update database with URL path
       await query(
-        'UPDATE profiles SET photo_path = @photoPath WHERE slug = @slug',
+        `UPDATE profiles 
+         SET photo_path = @photoPath
+         WHERE slug = @slug`,
         {
           photoPath: { type: sql.NVarChar, value: photoPath },
           slug:      { type: sql.Char,     value: slug },
@@ -258,6 +264,7 @@ router.post(
     }
   }
 );
+
 
 // ─────────────────────────────────────────────
 //  DELETE /api/admin/profiles/:slug/photo
