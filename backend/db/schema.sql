@@ -1,6 +1,5 @@
--- ProfileLink Database Schema
+-- Digital Card Database Schema
 -- MS SQL Server 2022
--- Run via SSMS or sqlcmd after creating the database
 
 -- ─────────────────────────────────────────────
 --  Admins

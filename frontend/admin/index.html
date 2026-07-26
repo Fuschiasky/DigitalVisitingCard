@@ -3,73 +3,120 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ProfileLink Admin</title>
+  <title>Digital Card Admin</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #0a0a0a; --surface: #111111; --surface2: #181818;
-      --border: rgba(255,255,255,0.08); --gold: #c9a84c;
-      --gold-dim: rgba(201,168,76,0.15); --text: #e4e0d9;
-      --text-dim: rgba(228,224,217,0.5); --danger: #e05555;
-      --success: #5cb88b; --radius: 14px;
+      --bg:          #FDFCFB;
+      --surface:     #e8e4de;
+      --surface2:    #dedad4;
+      --white:       #FFFFFF;
+      --border:      rgba(13,13,13,0.09);
+      --border-med:  rgba(13,13,13,0.13);
+      --gold:        #c9a84c;
+      --gold-lt:     #e8c97a;
+      --gold-dim:    rgba(201,168,76,0.18);
+      --gold-border: rgba(201,168,76,0.38);
+      --red:         #C80651;
+      --text:        #0d0d0d;
+      --text-dim:    rgba(13,13,13,0.45);
+      --danger:      #d93025;
+      --success:     #2a9d5c;
+      --radius:      14px;
     }
     html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
-    #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-    .login-box { width: min(380px, calc(100vw - 40px)); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 48px 40px; text-align: center; }
-    .login-logo { font-family: 'Cormorant Garamond', serif; font-size: 30px; color: var(--gold); margin-bottom: 8px; }
-    .login-sub { font-size: 12px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 36px; }
+
+    /* ── Login ── */
+    #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg); }
+    #login-screen::before { content: ''; position: fixed; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(201,168,76,0.05) 0%, transparent 65%); pointer-events: none; }
+    .login-box { position: relative; width: min(380px, calc(100vw - 40px)); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 48px 40px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.07), 0 2px 8px rgba(0,0,0,0.04); }
+    .login-box::before { content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 48px; height: 2px; background: var(--gold); border-radius: 0 0 3px 3px; }
+    .login-logo { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-style: italic; font-weight: 400; color: var(--text); margin-bottom: 0; letter-spacing: 0.5px; }
+    .login-ornament { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 10px 0 6px; }
+    .login-ornament-dash { height: 1px; width: 26px; background: linear-gradient(90deg, transparent, var(--gold-border)); }
+    .login-ornament-dash.r { background: linear-gradient(270deg, transparent, var(--gold-border)); }
+    .login-ornament-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--gold); }
+    .login-sub { font-size: 10px; color: var(--text-dim); letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 32px; }
+    .login-footer { margin-top: 28px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .login-footer-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--gold); opacity: 0.45; }
+    .login-footer-text { font-size: 10px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; }
+
+    /* ── Fields ── */
     .field { margin-bottom: 16px; text-align: left; }
     .field label { display: block; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px; }
-    .field input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: inherit; font-size: 14px; padding: 12px 14px; outline: none; transition: border-color 0.2s; }
-    .field input:focus { border-color: var(--gold); }
+    .field input { width: 100%; background: var(--white); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: inherit; font-size: 14px; padding: 12px 14px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+    .field input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-dim); }
     .field input::placeholder { color: var(--text-dim); }
+
+    /* ── Buttons ── */
     .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: 10px; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 500; padding: 12px 20px; transition: opacity 0.15s, transform 0.1s; text-decoration: none; }
     .btn:active { transform: scale(0.98); }
     .btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .btn-gold { background: var(--gold); color: #0a0a0a; width: 100%; justify-content: center; }
-    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
-    .btn-danger { background: rgba(224,85,85,0.12); border: 1px solid rgba(224,85,85,0.25); color: var(--danger); }
+    .btn-gold { background: var(--red); color: var(--white); width: 100%; justify-content: center; }
+    .btn-ghost { background: transparent; border: 1px solid var(--border-med); color: var(--text-dim); }
+    .btn-danger { background: rgba(217,48,37,0.09); border: 1px solid rgba(217,48,37,0.22); color: var(--danger); }
     .btn-sm { padding: 8px 14px; font-size: 12px; border-radius: 8px; width: auto; }
-    .err-msg { background: rgba(224,85,85,0.1); border: 1px solid rgba(224,85,85,0.2); border-radius: 8px; color: var(--danger); font-size: 13px; padding: 10px 14px; margin-bottom: 16px; display: none; }
-    .ok-msg { background: rgba(92,184,139,0.1); border: 1px solid rgba(92,184,139,0.2); border-radius: 8px; color: var(--success); font-size: 13px; padding: 10px 14px; margin-bottom: 16px; display: none; }
+    .btn-gold-outline { background: transparent; border: 1px solid var(--gold-border); color: var(--gold); }
+
+    /* ── Messages ── */
+    .err-msg { background: rgba(217,48,37,0.08); border: 1px solid rgba(217,48,37,0.2); border-radius: 8px; color: var(--danger); font-size: 13px; padding: 10px 14px; margin-bottom: 16px; display: none; }
+    .ok-msg  { background: rgba(42,157,92,0.08); border: 1px solid rgba(42,157,92,0.2);  border-radius: 8px; color: var(--success); font-size: 13px; padding: 10px 14px; margin-bottom: 16px; display: none; }
+
+    /* ── App shell ── */
     #app { display: none; height: 100vh; flex-direction: column; }
-    .topbar { height: 56px; flex-shrink: 0; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 24px; gap: 16px; }
-    .topbar-logo { font-family: 'Cormorant Garamond', serif; font-size: 22px; color: var(--gold); margin-right: auto; }
+
+    /* ── Topbar ── */
+    .topbar { height: 56px; flex-shrink: 0; background: var(--white); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 24px; gap: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+    .topbar-logo { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-style: italic; color: var(--text); margin-right: auto; }
     .topbar-user { font-size: 13px; color: var(--text-dim); }
-    .main { flex: 1; overflow: auto; padding: 32px; }
+
+    /* ── Main ── */
+    .main { flex: 1; overflow: auto; padding: 32px; background: var(--bg); }
     .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
-    .section-title { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 500; }
-    .table-wrap { overflow-x: auto; }
+    .section-title { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-style: italic; font-weight: 500; color: var(--text); }
+    .section-actions { display: flex; gap: 8px; }
+
+    /* ── Table ── */
+    .table-wrap { overflow-x: auto; background: var(--white); border-radius: var(--radius); border: 1px solid var(--border); }
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th { text-align: left; padding: 10px 16px; font-size: 10px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-dim); border-bottom: 1px solid var(--border); }
-    td { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
-    tr:hover td { background: rgba(255,255,255,0.02); }
-    .avatar-sm { width: 36px; height: 36px; border-radius: 50%; background: var(--gold-dim); display: inline-flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; font-size: 14px; color: var(--gold); overflow: hidden; flex-shrink: 0; border: 1px solid rgba(201,168,76,0.2); }
+    th { text-align: left; padding: 10px 16px; font-size: 10px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-dim); border-bottom: 1px solid var(--border); background: var(--white); }
+    td { padding: 14px 16px; border-bottom: 1px solid rgba(13,13,13,0.05); vertical-align: middle; color: var(--text); }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(201,168,76,0.04); }
+    .avatar-sm { width: 36px; height: 36px; border-radius: 50%; background: var(--gold-dim); display: inline-flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px; color: var(--gold); overflow: hidden; flex-shrink: 0; border: 1px solid var(--gold-border); }
     .avatar-sm img { width: 100%; height: 100%; object-fit: cover; }
     .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; }
-    .badge-active { background: rgba(92,184,139,0.1); color: var(--success); }
-    .badge-inactive { background: rgba(224,85,85,0.1); color: var(--danger); }
-    .url-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 11px; color: var(--text-dim); cursor: pointer; transition: border-color 0.15s; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .badge-active   { background: rgba(42,157,92,0.1);  color: var(--success); }
+    .badge-inactive { background: rgba(217,48,37,0.09); color: var(--danger); }
+    .url-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--border-med); border-radius: 6px; padding: 4px 8px; font-size: 11px; color: var(--text-dim); cursor: pointer; transition: border-color 0.15s, color 0.15s; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .url-chip:hover { border-color: var(--gold); color: var(--gold); }
     .actions { display: flex; gap: 6px; }
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+
+    /* ── Modals ── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(13,13,13,0.45); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
     .modal-overlay.open { display: flex; }
-    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); width: min(520px, 100%); max-height: 90vh; overflow-y: auto; padding: 36px; }
-    .modal-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; margin-bottom: 24px; }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); width: min(520px, 100%); max-height: 90vh; overflow-y: auto; padding: 36px; box-shadow: 0 24px 60px rgba(0,0,0,0.12); }
+    .modal-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-style: italic; margin-bottom: 24px; color: var(--text); }
     .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
     .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .photo-zone { border: 2px dashed var(--border); border-radius: 12px; padding: 24px; text-align: center; cursor: pointer; transition: border-color 0.2s; font-size: 13px; color: var(--text-dim); }
+    .photo-zone { border: 2px dashed var(--border-med); border-radius: 12px; padding: 24px; text-align: center; cursor: pointer; transition: border-color 0.2s, color 0.2s; font-size: 13px; color: var(--text-dim); }
     .photo-zone:hover { border-color: var(--gold); color: var(--gold); }
     .photo-zone.has-file { border-style: solid; border-color: var(--success); color: var(--success); }
+
+    /* ── Empty state ── */
     .empty { text-align: center; padding: 80px 40px; color: var(--text-dim); }
-    .empty-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; color: var(--text); margin-bottom: 8px; margin-top: 12px; }
-    .toast { position: fixed; bottom: 28px; right: 28px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 18px; font-size: 13px; z-index: 200; opacity: 0; transform: translateY(10px); transition: opacity 0.2s, transform 0.2s; pointer-events: none; }
+    .empty-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-style: italic; color: var(--text); margin-bottom: 8px; margin-top: 12px; }
+
+    /* ── Toast ── */
+    .toast { position: fixed; bottom: 28px; right: 28px; background: var(--white); border: 1px solid var(--border-med); border-radius: 10px; padding: 12px 18px; font-size: 13px; z-index: 200; opacity: 0; transform: translateY(10px); transition: opacity 0.2s, transform 0.2s; pointer-events: none; color: var(--text); box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
     .toast.show { opacity: 1; transform: translateY(0); }
-    .toast.toast-ok { border-color: rgba(92,184,139,0.3); color: var(--success); }
-    .toast.toast-err { border-color: rgba(224,85,85,0.3); color: var(--danger); }
+    .toast.toast-ok  { border-color: rgba(42,157,92,0.3);  color: var(--success); }
+    .toast.toast-err { border-color: rgba(217,48,37,0.3); color: var(--danger); }
+
+    /* ── Responsive ── */
     @media (max-width: 600px) {
       .main { padding: 20px 16px; }
       .row-2 { grid-template-columns: 1fr; }
@@ -81,8 +128,13 @@
 
 <div id="login-screen">
   <div class="login-box">
-    <div class="login-logo">ProfileLink</div>
-    <div class="login-sub">Admin Portal</div>
+    <div class="login-logo">Digital Card</div>
+    <div class="login-ornament">
+      <div class="login-ornament-dash"></div>
+      <div class="login-ornament-dot"></div>
+      <div class="login-ornament-dash r"></div>
+    </div>
+    <div class="login-sub">Admin Portal · Diageo India</div>
     <div class="err-msg" id="login-err"></div>
     <div class="field">
       <label for="l-user">Username</label>
@@ -93,19 +145,27 @@
       <input id="l-pass" type="password" autocomplete="current-password" placeholder="••••••••••" />
     </div>
     <button class="btn btn-gold" id="login-btn">Sign In</button>
+    <div class="login-footer">
+      <div class="login-footer-dot"></div>
+      <div class="login-footer-text">Diageo India</div>
+      <div class="login-footer-dot"></div>
+    </div>
   </div>
 </div>
 
 <div id="app">
   <header class="topbar">
-    <div class="topbar-logo">ProfileLink</div>
+    <div class="topbar-logo">Digital Card</div>
     <span class="topbar-user" id="topbar-user"></span>
     <button class="btn btn-ghost btn-sm" id="logout-btn">Log out</button>
   </header>
   <main class="main">
     <div class="section-header">
       <h1 class="section-title">Profiles</h1>
-      <button class="btn btn-gold btn-sm" id="new-profile-btn">＋ New Profile</button>
+      <div class="section-actions">
+        <button class="btn btn-gold-outline btn-sm" id="bulk-upload-btn">&#8679; Bulk Upload</button>
+        <button class="btn btn-sm" style="background:var(--gold);color:var(--text);font-weight:600;" id="new-profile-btn">＋ New Profile</button>
+      </div>
     </div>
     <div id="err-banner" class="err-msg"></div>
     <div class="table-wrap">
@@ -156,7 +216,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" id="modal-cancel">Cancel</button>
-      <button class="btn btn-gold" id="modal-save">Save Profile</button>
+      <button class="btn btn-sm" style="background:var(--red);color:#fff;font-weight:600;padding:10px 20px;border-radius:10px;" id="modal-save">Save Profile</button>
     </div>
   </div>
 </div>
