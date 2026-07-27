@@ -172,7 +172,7 @@
       <table>
         <thead>
           <tr>
-            <th></th><th>Name</th><th>Designation</th><th>Phone</th>
+            <th></th><th>Name</th><th>Designation</th><th>Email</th><th>Phone</th>
             <th>Status</th><th>Profile URL</th><th>Actions</th>
           </tr>
         </thead>
@@ -200,6 +200,7 @@
       <div class="field"><label>Last Name *</label><input id="m-lname" type="text" placeholder="Sharma" /></div>
     </div>
     <div class="field"><label>Designation *</label><input id="m-desg" type="text" placeholder="Senior Engineer" /></div>
+    <div class="field"><label>Email *</label><input id="m-email" type="email" placeholder="priya.sharma@company.com" /></div>
     <div class="field"><label>Primary Phone *</label><input id="m-ph1" type="tel" placeholder="+91 98765 43210" /></div>
     <div class="row-2">
       <div class="field"><label>Phone 2 (optional)</label><input id="m-ph2" type="tel" placeholder="+91 98765 43211" /></div>
@@ -229,6 +230,33 @@
     <div class="modal-footer">
       <button class="btn btn-ghost" id="del-cancel">Cancel</button>
       <button class="btn btn-danger" id="del-confirm">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk Upload Modal -->
+<div class="modal-overlay" id="bulk-modal">
+  <div class="modal" style="max-width:560px">
+    <h2 class="modal-title">Bulk Upload Profiles</h2>
+    <div class="err-msg" id="bulk-err"></div>
+    <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px;line-height:1.6">
+      Upload a CSV with columns <code>first_name</code>, <code>last_name</code>, <code>designation</code>,
+      <code>email</code>, <code>phone_primary</code>, and optionally <code>phone_2</code>, <code>phone_3</code>.
+      Rows with errors are skipped and listed below — the rest are still created.
+    </p>
+    <a href="/admin/bulk-upload-template.csv" download style="display:inline-block;margin-bottom:16px;font-size:13px;color:var(--gold);text-decoration:underline;">
+      Download CSV template
+    </a>
+    <div class="field">
+      <div class="photo-zone" id="bulk-zone" tabindex="0">
+        <div id="bulk-zone-text">Click to choose a CSV file</div>
+        <input id="bulk-input" type="file" accept=".csv,text/csv" style="display:none" />
+      </div>
+    </div>
+    <div id="bulk-results" style="display:none;margin-top:16px;max-height:280px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:12px;font-size:13px;"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" id="bulk-cancel">Close</button>
+      <button class="btn btn-sm" style="background:var(--red);color:#fff;font-weight:600;padding:10px 20px;border-radius:10px;" id="bulk-submit">Upload</button>
     </div>
   </div>
 </div>

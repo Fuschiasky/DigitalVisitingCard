@@ -3,6 +3,7 @@
 const helmet       = require('helmet');
 const rateLimit    = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
+const validator = require('validator');
 
 // ─────────────────────────────────────────────
 //  Helmet — security headers
@@ -70,7 +71,7 @@ function stripHtml(str) {
 }
 
 function sanitiseProfile(req, res, next) {
-  const fields = ['first_name', 'last_name', 'designation', 'phone_primary', 'phone_2', 'phone_3'];
+  const fields = ['first_name', 'last_name', 'designation', 'email', 'phone_primary', 'phone_2', 'phone_3'];
   for (const f of fields) {
     if (req.body[f] !== undefined) {
       req.body[f] = stripHtml(req.body[f]);
@@ -94,6 +95,10 @@ const profileValidationRules = [
   body('designation')
     .trim().notEmpty().withMessage('Designation is required')
     .isLength({ max: 200 }).withMessage('Designation too long'),
+  body('email')
+    .trim().notEmpty().withMessage('Email is required')
+    .isEmail().withMessage('Invalid email address')
+    .isLength({ max: 255 }).withMessage('Email too long'),
   body('phone_primary')
     .trim().notEmpty().withMessage('Primary phone is required')
     .matches(PHONE_RE).withMessage('Invalid primary phone number'),
@@ -130,6 +135,54 @@ function requireValidSlug(req, res, next) {
   next();
 }
 
+// ─────────────────────────────────────────────
+//  Plain-object row validator, shared by bulk upload.
+//  Mirrors profileValidationRules exactly (same field names,
+//  same PHONE_RE, same length limits) so a row that would be
+//  accepted via the single-create form is accepted here too,
+//  and vice versa — one set of rules, not two that can drift.
+// ─────────────────────────────────────────────
+function validateProfileRow(row) {
+  const errors = [];
+  const clean = {};
+
+  const first_name = stripHtml(row.first_name || '').trim();
+  if (!first_name) errors.push('First name is required');
+  else if (first_name.length > 100) errors.push('First name too long');
+  clean.first_name = first_name;
+
+  const last_name = stripHtml(row.last_name || '').trim();
+  if (!last_name) errors.push('Last name is required');
+  else if (last_name.length > 100) errors.push('Last name too long');
+  clean.last_name = last_name;
+
+  const designation = stripHtml(row.designation || '').trim();
+  if (!designation) errors.push('Designation is required');
+  else if (designation.length > 200) errors.push('Designation too long');
+  clean.designation = designation;
+
+  const email = stripHtml(row.email || '').trim();
+  if (!email) errors.push('Email is required');
+  else if (!validator.isEmail(email)) errors.push('Invalid email address');
+  else if (email.length > 255) errors.push('Email too long');
+  clean.email = email;
+
+  const phone_primary = stripHtml(row.phone_primary || '').trim();
+  if (!phone_primary) errors.push('Primary phone is required');
+  else if (!PHONE_RE.test(phone_primary)) errors.push('Invalid primary phone number');
+  clean.phone_primary = phone_primary;
+
+  const phone_2 = stripHtml(row.phone_2 || '').trim();
+  if (phone_2 && !PHONE_RE.test(phone_2)) errors.push('Invalid phone 2');
+  clean.phone_2 = phone_2 || null;
+
+  const phone_3 = stripHtml(row.phone_3 || '').trim();
+  if (phone_3 && !PHONE_RE.test(phone_3)) errors.push('Invalid phone 3');
+  clean.phone_3 = phone_3 || null;
+
+  return { valid: errors.length === 0, errors, clean };
+}
+
 module.exports = {
   helmetConfig,
   publicLimiter,
@@ -140,4 +193,5 @@ module.exports = {
   loginValidationRules,
   validateRequest,
   requireValidSlug,
+  validateProfileRow,
 };

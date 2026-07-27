@@ -132,13 +132,42 @@ function renderProfile(data) {
     ul.appendChild(li);
   });
 
+  /* Email item — same list, own row, mailto: link */
+  if (data.email) {
+    var emailLi = document.createElement('li');
+    var emailA  = document.createElement('a');
+    emailA.className = 'phone-item';
+    emailA.href = 'mailto:' + data.email;
+    emailA.setAttribute('aria-label', 'Email: ' + data.email);
+
+    var emailIconWrap = document.createElement('span');
+    emailIconWrap.className = 'phone-icon';
+    emailIconWrap.setAttribute('aria-hidden', 'true');
+    emailIconWrap.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="M22 6l-10 7L2 6"/></svg>';
+
+    var emailTextWrap = document.createElement('span');
+    var emailLabelEl   = document.createElement('div');
+    emailLabelEl.className   = 'phone-label';
+    emailLabelEl.textContent = 'Email';
+    var emailValEl     = document.createElement('div');
+    emailValEl.className   = 'phone-number';
+    emailValEl.textContent = data.email;
+
+    emailTextWrap.appendChild(emailLabelEl);
+    emailTextWrap.appendChild(emailValEl);
+    emailA.appendChild(emailIconWrap);
+    emailA.appendChild(emailTextWrap);
+    emailLi.appendChild(emailA);
+    ul.appendChild(emailLi);
+  }
+
   card.appendChild(ul);
 
   /* Footer */
   var footer = document.createElement('p');
   footer.className = 'card-footer';
   footer.setAttribute('aria-hidden', 'true');
-  footer.textContent = 'Tap a number to call';
+  footer.textContent = 'Tap to call or email';
   card.appendChild(footer);
 
   app.innerHTML = '';

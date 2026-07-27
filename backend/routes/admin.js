@@ -6,11 +6,33 @@ const path   = require('path');
 const fs     = require('fs');
 const { query, sql } = require('../db/pool');
 const { requireAuth }        = require('../middleware/auth');
-const { upload, verifyUploadedFile, UPLOAD_DIR } = require('../middleware/upload');
+const { upload, uploadCsv, verifyUploadedFile, UPLOAD_DIR } = require('../middleware/upload');
 const {
   profileValidationRules, validateRequest,
-  sanitiseProfile, requireValidSlug,
+  sanitiseProfile, requireValidSlug, validateProfileRow,
+  adminApiLimiter,
 } = require('../middleware/security');
+const { parseProfileCsv } = require('../utils/csv');
+const multer = require('multer');
+
+// Wraps uploadCsv.single('file') so a rejected MIME/extension or an
+// oversized file returns a clear 400 with the real reason, instead of
+// falling through to the app's generic 500 error handler (which is what
+// happens today on the equivalent photo-upload route — same underlying
+// gap, fixed here so the new bulk feature doesn't inherit it).
+function handleCsvUpload(req, res, next) {
+  uploadCsv.single('file')(req, res, (err) => {
+    if (!err) return next();
+    if (err instanceof multer.MulterError) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'CSV file is too large (max 2 MB).' });
+      }
+      return res.status(400).json({ error: err.message });
+    }
+    // Errors thrown from fileFilter's cb(new Error(...))
+    return res.status(400).json({ error: err.message || 'Invalid file upload.' });
+  });
+}
 
 // All admin routes require valid JWT
 router.use(requireAuth);
@@ -21,7 +43,7 @@ router.use(requireAuth);
 router.get('/profiles', async (req, res) => {
   try {
     const result = await query(`
-      SELECT id, slug, first_name, last_name, designation,
+      SELECT id, slug, first_name, last_name, designation, email,
              phone_primary, phone_2, phone_3,
              CASE WHEN photo_path IS NOT NULL THEN 1 ELSE 0 END AS has_photo,
              is_active, created_at, updated_at
@@ -46,7 +68,7 @@ router.post(
   async (req, res) => {
     try {
       const {
-        first_name, last_name, designation,
+        first_name, last_name, designation, email,
         phone_primary, phone_2, phone_3,
       } = req.body;
 
@@ -54,16 +76,17 @@ router.post(
 
       const result = await query(`
         INSERT INTO profiles
-          (slug, first_name, last_name, designation,
+          (slug, first_name, last_name, designation, email,
            phone_primary, phone_2, phone_3, created_by)
         OUTPUT INSERTED.id
-        VALUES (@slug, @first_name, @last_name, @designation,
+        VALUES (@slug, @first_name, @last_name, @designation, @email,
                 @phone_primary, @phone_2, @phone_3, @created_by)
       `, {
         slug:          { type: sql.Char,     value: slug },
         first_name:    { type: sql.NVarChar, value: first_name },
         last_name:     { type: sql.NVarChar, value: last_name },
         designation:   { type: sql.NVarChar, value: designation },
+        email:         { type: sql.NVarChar, value: email },
         phone_primary: { type: sql.NVarChar, value: phone_primary },
         phone_2:       { type: sql.NVarChar, value: phone_2  || null },
         phone_3:       { type: sql.NVarChar, value: phone_3  || null },
@@ -95,8 +118,125 @@ router.post(
 );
 
 // ─────────────────────────────────────────────
-//  PUT /api/admin/profiles/:slug
+//  POST /api/admin/profiles/bulk
+//  Accepts a CSV file (field name "file") with columns:
+//  first_name, last_name, designation, email, phone_primary, phone_2, phone_3
+//  (header names are matched case-insensitively; "Phone 2" etc. also work).
+//
+//  Each row is validated with the same rules as single-profile
+//  creation. Rows that fail validation are skipped and reported —
+//  they do not abort the rest of the batch, since the common case
+//  is "199 good rows and 1 typo", not "all or nothing".
 // ─────────────────────────────────────────────
+router.post('/profiles/bulk', adminApiLimiter, handleCsvUpload, async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No CSV file uploaded' });
+  }
+
+  const MAX_ROWS = 500; // sane upper bound per batch; prevents one request pinning the DB pool
+
+  let parsed;
+  try {
+    parsed = parseProfileCsv(req.file.buffer);
+  } catch (err) {
+    console.error('[ADMIN] Bulk CSV parse error:', err);
+    return res.status(400).json({ error: 'Could not parse CSV file' });
+  } finally {
+    // The CSV is held only as an in-memory buffer (multer.memoryStorage —
+    // never written to disk). Once parsed into rows there's no reason to
+    // keep the raw bytes around for the rest of the request; drop the
+    // reference so it's eligible for garbage collection immediately
+    // rather than lingering until the response finishes.
+    req.file.buffer = null;
+  }
+
+  if (parsed.headerError) {
+    return res.status(400).json({ error: parsed.headerError });
+  }
+
+  if (!parsed.rows.length) {
+    return res.status(400).json({ error: 'CSV file contains no data rows' });
+  }
+
+  if (parsed.rows.length > MAX_ROWS) {
+    return res.status(400).json({
+      error: `CSV contains ${parsed.rows.length} rows; the limit per upload is ${MAX_ROWS}. Split it into smaller files.`,
+    });
+  }
+
+  const created = [];
+  const failed  = [];
+
+  for (const row of parsed.rows) {
+    const { valid, errors, clean } = validateProfileRow(row);
+
+    if (!valid) {
+      failed.push({ row: row._rowNumber, errors });
+      continue;
+    }
+
+    try {
+      const slug = uuidv4();
+      const result = await query(`
+        INSERT INTO profiles
+          (slug, first_name, last_name, designation, email,
+           phone_primary, phone_2, phone_3, created_by)
+        OUTPUT INSERTED.id
+        VALUES (@slug, @first_name, @last_name, @designation, @email,
+                @phone_primary, @phone_2, @phone_3, @created_by)
+      `, {
+        slug:          { type: sql.Char,     value: slug },
+        first_name:    { type: sql.NVarChar, value: clean.first_name },
+        last_name:     { type: sql.NVarChar, value: clean.last_name },
+        designation:   { type: sql.NVarChar, value: clean.designation },
+        email:         { type: sql.NVarChar, value: clean.email },
+        phone_primary: { type: sql.NVarChar, value: clean.phone_primary },
+        phone_2:       { type: sql.NVarChar, value: clean.phone_2 },
+        phone_3:       { type: sql.NVarChar, value: clean.phone_3 },
+        created_by:    { type: sql.Int,      value: req.admin.id },
+      });
+
+      created.push({
+        row: row._rowNumber,
+        id: result.recordset[0].id,
+        slug,
+        name: `${clean.first_name} ${clean.last_name}`,
+      });
+    } catch (err) {
+      console.error('[ADMIN] Bulk row insert error (row ' + row._rowNumber + '):', err);
+      failed.push({ row: row._rowNumber, errors: ['Server error while saving this row'] });
+    }
+  }
+
+  const totalRows = parsed.rows.length;
+  parsed = null; // release parsed row data; only totalRows is needed from here on
+
+  try {
+    await query(`
+      INSERT INTO audit_log (admin_id, action, ip_address, detail)
+      VALUES (@adminId, 'PROFILE_BULK_UPLOAD', @ip, @detail)
+    `, {
+      adminId: { type: sql.Int,      value: req.admin.id },
+      ip:      { type: sql.NVarChar, value: req.ip },
+      detail:  {
+        type: sql.NVarChar,
+        value: JSON.stringify({ totalRows, created: created.length, failed: failed.length }),
+      },
+    });
+  } catch (err) {
+    // Audit log failure shouldn't mask a successful upload — log and continue.
+    console.error('[ADMIN] Bulk upload audit log error:', err);
+  }
+
+  res.status(created.length ? 201 : 400).json({
+    message:      `${created.length} profile(s) created, ${failed.length} row(s) failed`,
+    totalRows,
+    created,
+    failed,
+  });
+});
+
+
 router.put(
   '/profiles/:slug',
   requireValidSlug,
@@ -107,7 +247,7 @@ router.put(
     try {
       const { slug } = req.params;
       const {
-        first_name, last_name, designation,
+        first_name, last_name, designation, email,
         phone_primary, phone_2, phone_3, is_active,
       } = req.body;
 
@@ -124,6 +264,7 @@ router.put(
         SET first_name    = @first_name,
             last_name     = @last_name,
             designation   = @designation,
+            email         = @email,
             phone_primary = @phone_primary,
             phone_2       = @phone_2,
             phone_3       = @phone_3,
@@ -134,6 +275,7 @@ router.put(
         first_name:    { type: sql.NVarChar, value: first_name },
         last_name:     { type: sql.NVarChar, value: last_name },
         designation:   { type: sql.NVarChar, value: designation },
+        email:         { type: sql.NVarChar, value: email },
         phone_primary: { type: sql.NVarChar, value: phone_primary },
         phone_2:       { type: sql.NVarChar, value: phone_2  || null },
         phone_3:       { type: sql.NVarChar, value: phone_3  || null },

@@ -25,6 +25,7 @@ CREATE TABLE profiles (
   first_name    NVARCHAR(100) NOT NULL,
   last_name     NVARCHAR(100) NOT NULL,
   designation   NVARCHAR(200) NOT NULL,
+  email         NVARCHAR(255) NOT NULL,
   phone_primary NVARCHAR(30)  NOT NULL,
   phone_2       NVARCHAR(30)  NULL,
   phone_3       NVARCHAR(30)  NULL,

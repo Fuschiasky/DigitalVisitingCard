@@ -181,6 +181,7 @@ function renderTable(profiles) {
       + '<td><div class="avatar-sm">' + esc(initials) + '</div></td>'
       + '<td><strong>' + esc(p.first_name) + ' ' + esc(p.last_name) + '</strong></td>'
       + '<td style="color:var(--text-dim)">' + esc(p.designation) + '</td>'
+      + '<td>' + esc(p.email) + '</td>'
       + '<td>' + esc(p.phone_primary) + '</td>'
       + '<td><span class="badge ' + (p.is_active ? 'badge-active' : 'badge-inactive') + '">'
       +   (p.is_active ? 'Active' : 'Inactive') + '</span></td>'
@@ -229,6 +230,7 @@ function openModal(slug) {
           $('m-fname').value = p.first_name    || '';
           $('m-lname').value = p.last_name     || '';
           $('m-desg').value  = p.designation   || '';
+          $('m-email').value = p.email         || '';
           $('m-ph1').value   = p.phone_primary || '';
           $('m-ph2').value   = p.phone_2       || '';
           $('m-ph3').value   = p.phone_3       || '';
@@ -250,7 +252,7 @@ function closeModal() {
 }
 
 function clearForm() {
-  ['m-fname','m-lname','m-desg','m-ph1','m-ph2','m-ph3'].forEach(function(id) {
+  ['m-fname','m-lname','m-desg','m-email','m-ph1','m-ph2','m-ph3'].forEach(function(id) {
     $(id).value = '';
   });
 }
@@ -264,13 +266,19 @@ function saveProfile() {
     first_name:    $('m-fname').value.trim(),
     last_name:     $('m-lname').value.trim(),
     designation:   $('m-desg').value.trim(),
+    email:         $('m-email').value.trim(),
     phone_primary: $('m-ph1').value.trim(),
     phone_2:       $('m-ph2').value.trim() || null,
     phone_3:       $('m-ph3').value.trim() || null,
   };
 
-  if (!payload.first_name || !payload.last_name || !payload.designation || !payload.phone_primary) {
+  if (!payload.first_name || !payload.last_name || !payload.designation || !payload.email || !payload.phone_primary) {
     showErr('modal-err', 'Please fill in all required fields (*).');
+    return;
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
+    showErr('modal-err', 'Please enter a valid email address.');
     return;
   }
 
@@ -374,6 +382,103 @@ function doDelete() {
   });
 }
 
+/* ── Bulk upload ── */
+function openBulkModal() {
+  hideMsg('bulk-err');
+  $('bulk-input').value = '';
+  $('bulk-zone').className = 'photo-zone';
+  $('bulk-zone-text').textContent = 'Click to choose a CSV file';
+  var results = $('bulk-results');
+  results.style.display = 'none';
+  results.innerHTML = '';
+  $('bulk-modal').classList.add('open');
+}
+
+function closeBulkModal() {
+  $('bulk-modal').classList.remove('open');
+}
+
+function handleBulkFile(file) {
+  if (!/\.csv$/i.test(file.name)) {
+    showErr('bulk-err', 'Please choose a .csv file.');
+    return;
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    showErr('bulk-err', 'CSV must be smaller than 2 MB.');
+    return;
+  }
+  hideMsg('bulk-err');
+  $('bulk-zone').className = 'photo-zone has-file';
+  $('bulk-zone-text').textContent = '✓ ' + file.name;
+  var dt = new DataTransfer();
+  dt.items.add(file);
+  $('bulk-input').files = dt.files;
+}
+
+function renderBulkResults(data) {
+  var results = $('bulk-results');
+  var html = '<div style="margin-bottom:8px;font-weight:500">'
+    + esc(data.message) + '</div>';
+
+  if (data.created && data.created.length) {
+    html += '<div style="color:var(--success);margin-bottom:8px">Created:</div><ul style="margin:0 0 12px 18px;padding:0">';
+    data.created.forEach(function(c) {
+      html += '<li>Row ' + esc(c.row) + ': ' + esc(c.name) + '</li>';
+    });
+    html += '</ul>';
+  }
+
+  if (data.failed && data.failed.length) {
+    html += '<div style="color:var(--danger);margin-bottom:8px">Failed:</div><ul style="margin:0 0 0 18px;padding:0">';
+    data.failed.forEach(function(f) {
+      html += '<li>Row ' + esc(f.row) + ': ' + esc(f.errors.join(', ')) + '</li>';
+    });
+    html += '</ul>';
+  }
+
+  results.innerHTML = html;
+  results.style.display = 'block';
+}
+
+function doBulkUpload() {
+  hideMsg('bulk-err');
+  var file = $('bulk-input').files[0];
+  if (!file) {
+    showErr('bulk-err', 'Please choose a CSV file first.');
+    return;
+  }
+
+  var btn = $('bulk-submit');
+  btn.disabled = true;
+  btn.textContent = 'Uploading…';
+
+  var fd = new FormData();
+  fd.append('file', file);
+
+  api('POST', '/api/admin/profiles/bulk', fd, false)
+  .then(function(res) {
+    if (!res) return;
+    return res.json().then(function(data) {
+      if (!res.ok && !(data.created && data.created.length)) {
+        showErr('bulk-err', data.error || 'Upload failed');
+        return;
+      }
+      renderBulkResults(data);
+      if (data.created && data.created.length) {
+        showToast(data.created.length + ' profile(s) created ✓');
+        loadProfiles();
+      }
+    });
+  })
+  .catch(function() {
+    showErr('bulk-err', 'Network error. Please try again.');
+  })
+  .finally(function() {
+    btn.disabled = false;
+    btn.textContent = 'Upload';
+  });
+}
+
 /* ── Wire up all event listeners once DOM is ready ── */
 document.addEventListener('DOMContentLoaded', function() {
 
@@ -384,6 +489,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   $('logout-btn').addEventListener('click', logout);
   $('new-profile-btn').addEventListener('click', function() { openModal(null); });
+  $('bulk-upload-btn').addEventListener('click', openBulkModal);
 
   $('modal-cancel').addEventListener('click', closeModal);
   $('profile-modal').addEventListener('click', function(e) {
@@ -418,6 +524,35 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   photoInput.addEventListener('change', function() {
     if (photoInput.files[0]) handlePhotoFile(photoInput.files[0]);
+  });
+
+  $('bulk-cancel').addEventListener('click', closeBulkModal);
+  $('bulk-modal').addEventListener('click', function(e) {
+    if (e.target === $('bulk-modal')) closeBulkModal();
+  });
+  $('bulk-submit').addEventListener('click', doBulkUpload);
+
+  var bulkZone  = $('bulk-zone');
+  var bulkInput = $('bulk-input');
+
+  bulkZone.addEventListener('click', function() { bulkInput.click(); });
+  bulkZone.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' || e.key === ' ') bulkInput.click();
+  });
+  bulkZone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    bulkZone.style.borderColor = 'var(--gold)';
+  });
+  bulkZone.addEventListener('dragleave', function() {
+    bulkZone.style.borderColor = '';
+  });
+  bulkZone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    bulkZone.style.borderColor = '';
+    if (e.dataTransfer.files[0]) handleBulkFile(e.dataTransfer.files[0]);
+  });
+  bulkInput.addEventListener('change', function() {
+    if (bulkInput.files[0]) handleBulkFile(bulkInput.files[0]);
   });
 
 });
