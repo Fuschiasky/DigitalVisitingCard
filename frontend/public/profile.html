@@ -76,10 +76,12 @@
       font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 500;
       font-style: italic; letter-spacing: 0.3px; line-height: 1.1; margin-bottom: 10px;
       color: var(--text);
+      overflow-wrap: anywhere; word-break: break-word;
     }
     .designation {
       font-size: 11px; font-weight: 600; color: var(--text);
       letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 36px;
+      overflow-wrap: anywhere; word-break: break-word;
     }
     .divider { width: 40px; height: 1px; background: var(--border-med); margin: 0 auto 32px; }
     .phones { list-style: none; display: flex; flex-direction: column; gap: 12px; }
@@ -96,8 +98,20 @@
       border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--gold);
     }
     .phone-icon svg { width: 15px; height: 15px; }
+    /* The label+value pair sits in a bare <span> next to the icon inside
+       the flex row. Without min-width:0, a flex child's implicit
+       min-width:auto refuses to shrink below its content's natural
+       width — so a long email/phone string pushes the row wider than
+       the card instead of wrapping. text-align:left keeps wrapped lines
+       from re-centering oddly inside the row. */
+    .phone-item > span:last-child {
+      min-width: 0; flex: 1 1 auto; text-align: left; overflow: hidden;
+    }
     .phone-label { color: var(--text-dim); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 1px; }
-    .phone-number { line-height: 1.2; color: var(--text); }
+    .phone-number {
+      line-height: 1.3; color: var(--text);
+      overflow-wrap: anywhere; word-break: break-word;
+    }
     .card-footer {
       margin-top: 32px; display: flex; align-items: center; justify-content: center; gap: 6px;
     }
@@ -110,7 +124,17 @@
       border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    @media (max-width: 480px) { .card { padding: 44px 28px 36px; } .name { font-size: 28px; } }
+    @media (max-width: 480px) {
+      .card { padding: 40px 22px 32px; }
+      .name { font-size: 26px; }
+      .phone-item { padding: 12px 14px; gap: 10px; }
+      .phone-number { font-size: 14px; }
+    }
+    @media (max-width: 360px) {
+      .card { padding: 32px 16px 28px; }
+      .name { font-size: 23px; }
+      .avatar-wrap { width: 90px; height: 90px; margin-bottom: 20px; }
+    }
   </style>
 </head>
 <body>
