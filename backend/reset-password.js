@@ -10,7 +10,7 @@ const { query, sql }  = require('./db/pool');
 
 async function resetPassword() {
   const username    = 'admin';          // change if needed
-  const newPassword = 'YourNewPassword123!';   // change this
+  const newPassword = 'Diageo1234';   // change this
 
   if (newPassword.length < 10) {
     console.error('Password must be at least 10 characters');
@@ -20,7 +20,7 @@ async function resetPassword() {
   const hash = await bcrypt.hash(newPassword, 12);
 
   const result = await query(
-    "UPDATE admins SET password_hash = 'StrongPassword123!' WHERE username = 'admin'",
+    "UPDATE admins SET password_hash = @hash WHERE username = @username",
     {
       hash:     { type: sql.NVarChar, value: hash },
       username: { type: sql.NVarChar, value: username },

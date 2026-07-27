@@ -46,7 +46,7 @@ const publicLimiter = rateLimit({
 
 const adminLoginLimiter = rateLimit({
   windowMs:         15 * 60 * 1000,   // 15 minutes
-  max:              1000,                // 10 login attempts per 15 min per IP
+  max:              10,                // 10 login attempts per 15 min per IP
   standardHeaders:  true,
   legacyHeaders:    false,
   message:          { error: 'Too many login attempts. Wait 15 minutes.' },
