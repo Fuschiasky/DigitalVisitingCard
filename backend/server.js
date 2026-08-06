@@ -19,9 +19,15 @@ const app  = express();
 const PORT = process.env.PORT || 3000;
 
 // ─────────────────────────────────────────────
-//  Trust proxy (required if behind nginx/load balancer)
+//  Trust proxy — IIS sits in front of this app as a single reverse-proxy
+//  hop, forwarding the real client IP via X-Forwarded-For. Setting this
+//  to 1 tells Express to trust exactly that one hop when determining
+//  req.ip (used by express-rate-limit for the login/API limiters).
+//  If another proxy/load balancer is ever added in front of IIS, this
+//  needs to become 2, or the limiter would trust an IP an attacker
+//  could forge from outside.
 // ─────────────────────────────────────────────
-//app.set('trust proxy', 1);
+app.set('trust proxy', 1);
 
 // ─────────────────────────────────────────────
 //  Security headers
@@ -93,6 +99,13 @@ app.use('/api/profile', profileRoute);
 // ─────────────────────────────────────────────
 app.get('/profile.js', publicLimiter, (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'profile.js'));
+});
+
+// ─────────────────────────────────────────────
+//  Diageo India logo, shown above the public profile card
+// ─────────────────────────────────────────────
+app.get('/diageo-logo.png', publicLimiter, (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'frontend', 'public', 'diageo-logo.png'));
 });
 
 // ─────────────────────────────────────────────

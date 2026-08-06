@@ -33,13 +33,21 @@
       color: var(--text);
       font-family: 'DM Sans', system-ui, sans-serif;
       -webkit-font-smoothing: antialiased;
-      display: flex; align-items: center; justify-content: center;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
     }
     .glow {
       position: fixed; width: 600px; height: 600px;
       background: radial-gradient(circle, rgba(201,168,76,0.06) 0%, transparent 70%);
       top: 50%; left: 50%; transform: translate(-50%, -50%);
       pointer-events: none; z-index: 0;
+    }
+    .brand-logo {
+      position: relative; z-index: 1;
+      margin-bottom: 28px;
+      text-align: center;
+    }
+    .brand-logo img {
+      width: 200px; height: auto; display: block;
     }
     .card {
       position: relative; z-index: 1;
@@ -129,16 +137,23 @@
       .name { font-size: 26px; }
       .phone-item { padding: 12px 14px; gap: 10px; }
       .phone-number { font-size: 14px; }
+      .brand-logo { margin-bottom: 22px; }
+      .brand-logo img { width: 160px; }
     }
     @media (max-width: 360px) {
       .card { padding: 32px 16px 28px; }
       .name { font-size: 23px; }
       .avatar-wrap { width: 90px; height: 90px; margin-bottom: 20px; }
+      .brand-logo { margin-bottom: 18px; }
+      .brand-logo img { width: 130px; }
     }
   </style>
 </head>
 <body>
 <div class="glow" aria-hidden="true"></div>
+<div class="brand-logo">
+  <img src="/diageo-logo.png" alt="Diageo India" width="732" height="341" />
+</div>
 <div id="app">
   <div class="state-card" aria-live="polite">
     <div class="spinner"></div>
