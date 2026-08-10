@@ -109,6 +109,31 @@ app.get('/diageo-logo.png', publicLimiter, (req, res) => {
 });
 
 // ─────────────────────────────────────────────
+//  Brand logos for the two scrolling carousels on the public
+//  profile page. Served at /brands/:filename — no directory listing.
+//  Drop matching .jpg files into frontend/public/brands/ (filenames
+//  referenced directly in profile.html, e.g. mcdowells.jpg).
+// ─────────────────────────────────────────────
+const BRANDS_DIR = path.join(__dirname, '..', 'frontend', 'public', 'brands');
+
+app.use('/brands', publicLimiter, (req, res, next) => {
+  const requested = path.resolve(BRANDS_DIR, path.basename(req.path));
+  if (!requested.startsWith(BRANDS_DIR)) {
+    return res.status(400).end();
+  }
+  next();
+}, express.static(BRANDS_DIR, {
+  index:    false,
+  dotfiles: 'deny',
+  maxAge:   '7d',
+  etag:     true,
+  setHeaders: (res) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+  },
+}));
+
+// ─────────────────────────────────────────────
 //  Profile page — serve HTML shell, JS fetches data
 //  Matched: /p/<uuid>
 // ─────────────────────────────────────────────

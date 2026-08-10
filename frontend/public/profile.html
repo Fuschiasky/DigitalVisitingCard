@@ -33,7 +33,13 @@
       color: var(--text);
       font-family: 'DM Sans', system-ui, sans-serif;
       -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      width: 100%;
+    }
+    .page-content {
+      min-height: 100vh;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
+      width: 100%;
     }
     .glow {
       position: fixed; width: 600px; height: 600px;
@@ -147,19 +153,125 @@
       .brand-logo { margin-bottom: 18px; }
       .brand-logo img { width: 130px; }
     }
+
+    .brand-carousels {
+      position: relative; z-index: 1;
+      margin-top: 28px;
+      width: 100%;
+    }
+    .carousel-track-wrap {
+      overflow: hidden;
+      margin-bottom: 14px;
+      width: 100%;
+    }
+    .carousel-track {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      width: max-content;
+    }
+    .carousel-track img {
+      height: 32px;
+      width: auto;
+      min-width: 64px;
+      display: block;
+      opacity: 0.85;
+    }
+    .carousel-track.scroll-rtl {
+      animation: scroll-rtl 32s linear infinite;
+    }
+    .carousel-track.scroll-ltr {
+      animation: scroll-ltr 32s linear infinite;
+    }
+    .carousel-track-wrap:hover .carousel-track,
+    .carousel-track-wrap:active .carousel-track {
+      animation-play-state: paused;
+    }
+    @keyframes scroll-rtl {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
+    }
+    @keyframes scroll-ltr {
+      from { transform: translateX(-50%); }
+      to   { transform: translateX(0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .carousel-track.scroll-rtl,
+      .carousel-track.scroll-ltr {
+        animation: none;
+      }
+    }
+    @media (max-width: 480px) {
+      .carousel-track img { height: 24px; min-width: 48px; }
+      .carousel-track { gap: 18px; }
+    }
+    @media (max-width: 360px) {
+      .carousel-track img { height: 20px; min-width: 40px; }
+      .carousel-track { gap: 14px; }
+    }
+    @media (min-width: 768px) {
+      .carousel-track img { height: 36px; min-width: 76px; }
+      .carousel-track { gap: 40px; }
+    }
+    @media (min-width: 900px) {
+      .carousel-track img { height: 40px; min-width: 84px; }
+      .carousel-track { gap: 48px; }
+    }
+    @media (min-width: 1300px) {
+      .carousel-track img { height: 48px; min-width: 104px; }
+      .carousel-track { gap: 64px; }
+    }
   </style>
 </head>
 <body>
 <div class="glow" aria-hidden="true"></div>
-<div class="brand-logo">
-  <img src="/diageo-logo.png" alt="Diageo India" width="732" height="341" />
-</div>
-<div id="app">
-  <div class="state-card" aria-live="polite">
-    <div class="spinner"></div>
-    <div class="state-title">Loading profile…</div>
+<div class="page-content">
+  <div class="brand-logo">
+    <img src="/diageo-logo.png" alt="Diageo India" width="732" height="341" />
+  </div>
+  <div id="app">
+    <div class="state-card" aria-live="polite">
+      <div class="spinner"></div>
+      <div class="state-title">Loading profile…</div>
+    </div>
   </div>
 </div>
+
+<div class="brand-carousels" aria-hidden="true">
+  <div class="carousel-track-wrap">
+    <div class="carousel-track scroll-rtl">
+      <img src="/brands/mcdowells.jpg" alt="McDowell's" />
+      <img src="/brands/royalchallenge.jpg" alt="Royal Challenge" />
+      <img src="/brands/smirnoff.svg" alt="Smirnoff" />
+      <img src="/brands/godawan.jpg" alt="Godawan" />
+      <img src="/brands/greaterthan.jpg" alt="Greater Than" />
+      <img src="/brands/johnniewalker.jpg" alt="Johnnie Walker" />
+      <img src="/brands/mcdowells.jpg" alt="McDowell's" />
+      <img src="/brands/royalchallenge.jpg" alt="Royal Challenge" />
+      <img src="/brands/smirnoff.svg" alt="Smirnoff" />
+      <img src="/brands/godawan.jpg" alt="Godawan" />
+      <img src="/brands/greaterthan.jpg" alt="Greater Than" />
+      <img src="/brands/johnniewalker.jpg" alt="Johnnie Walker" />
+    </div>
+  </div>
+  <div class="carousel-track-wrap">
+    <div class="carousel-track scroll-ltr">
+      <img src="/brands/donjulio.jpg" alt="Don Julio" />
+      <img src="/brands/blackandwhite.jpg" alt="Black & White" />
+      <img src="/brands/signature.jpg" alt="Signature" />
+      <img src="/brands/hapusa.jpg" alt="Hapusa" />
+      <img src="/brands/tanqueray.jpg" alt="Tanqueray" />
+      <img src="/brands/baileys.svg" alt="Baileys" />
+      <img src="/brands/donjulio.jpg" alt="Don Julio" />
+      <img src="/brands/blackandwhite.jpg" alt="Black & White" />
+      <img src="/brands/signature.jpg" alt="Signature" />
+      <img src="/brands/hapusa.jpg" alt="Hapusa" />
+      <img src="/brands/tanqueray.jpg" alt="Tanqueray" />
+      <img src="/brands/baileys.svg" alt="Baileys" />
+    </div>
+  </div>
+</div>
+
 <script src="/profile.js"></script>
 </body>
 </html>
