@@ -58,6 +58,9 @@ const HEADER_ALIASES = {
   email:          'email',
   emailid:        'email',
   emailaddress:   'email',
+  address:        'address',
+  fulladdress:    'address',
+  mailingaddress: 'address',
   phoneprimary:   'phone_primary',
   phone_primary:  'phone_primary',
   phone1:         'phone_primary',
@@ -83,11 +86,11 @@ function parseProfileCsv(buffer) {
 
   if (!fieldMap.includes('first_name') || !fieldMap.includes('last_name') ||
       !fieldMap.includes('designation') || !fieldMap.includes('email') ||
-      !fieldMap.includes('phone_primary')) {
+      !fieldMap.includes('address') || !fieldMap.includes('phone_primary')) {
     return {
       rows: [],
       headerError:
-        'CSV header must include first_name, last_name, designation, email, and phone_primary columns',
+        'CSV header must include first_name, last_name, designation, email, address, and phone_primary columns',
     };
   }
 

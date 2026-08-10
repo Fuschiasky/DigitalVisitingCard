@@ -161,6 +161,36 @@ function renderProfile(data) {
     ul.appendChild(emailLi);
   }
 
+  /* Address item — same list, own row, but plain (non-interactive):
+     no href, no tap action. Multi-line text is preserved via CSS
+     white-space handling on .address-text rather than building
+     separate line elements. */
+  if (data.address) {
+    var addressLi = document.createElement('li');
+    var addressDiv = document.createElement('div');
+    addressDiv.className = 'phone-item address-item';
+
+    var addressIconWrap = document.createElement('span');
+    addressIconWrap.className = 'phone-icon';
+    addressIconWrap.setAttribute('aria-hidden', 'true');
+    addressIconWrap.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+
+    var addressTextWrap = document.createElement('span');
+    var addressLabelEl  = document.createElement('div');
+    addressLabelEl.className   = 'phone-label';
+    addressLabelEl.textContent = 'Address';
+    var addressValEl    = document.createElement('div');
+    addressValEl.className   = 'phone-number address-text';
+    addressValEl.textContent = data.address;
+
+    addressTextWrap.appendChild(addressLabelEl);
+    addressTextWrap.appendChild(addressValEl);
+    addressDiv.appendChild(addressIconWrap);
+    addressDiv.appendChild(addressTextWrap);
+    addressLi.appendChild(addressDiv);
+    ul.appendChild(addressLi);
+  }
+
   card.appendChild(ul);
 
   /* Footer */

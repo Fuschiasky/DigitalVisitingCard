@@ -107,6 +107,14 @@
       transition: background 0.2s, border-color 0.2s;
     }
     .phone-item:hover { background: rgba(201,168,76,0.06); border-color: var(--gold-bdr); }
+    .address-item {
+      cursor: default;
+      align-items: flex-start;
+    }
+    .address-item:hover {
+      background: var(--white); border-color: var(--border);
+    }
+    .address-item .phone-icon { margin-top: 1px; }
     .phone-icon {
       flex-shrink: 0; width: 32px; height: 32px; background: var(--gold-dim);
       border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--gold);
@@ -125,6 +133,9 @@
     .phone-number {
       line-height: 1.3; color: var(--text);
       overflow-wrap: anywhere; word-break: break-word;
+    }
+    .address-text {
+      white-space: pre-line;
     }
     .card-footer {
       margin-top: 32px; display: flex; align-items: center; justify-content: center; gap: 6px;

@@ -43,7 +43,7 @@ router.use(requireAuth);
 router.get('/profiles', async (req, res) => {
   try {
     const result = await query(`
-      SELECT id, slug, first_name, last_name, designation, email,
+      SELECT id, slug, first_name, last_name, designation, email, address,
              phone_primary, phone_2, phone_3,
              CASE WHEN photo_path IS NOT NULL THEN 1 ELSE 0 END AS has_photo,
              is_active, created_at, updated_at
@@ -68,7 +68,7 @@ router.post(
   async (req, res) => {
     try {
       const {
-        first_name, last_name, designation, email,
+        first_name, last_name, designation, email, address,
         phone_primary, phone_2, phone_3,
       } = req.body;
 
@@ -76,10 +76,10 @@ router.post(
 
       const result = await query(`
         INSERT INTO profiles
-          (slug, first_name, last_name, designation, email,
+          (slug, first_name, last_name, designation, email, address,
            phone_primary, phone_2, phone_3, created_by)
         OUTPUT INSERTED.id
-        VALUES (@slug, @first_name, @last_name, @designation, @email,
+        VALUES (@slug, @first_name, @last_name, @designation, @email, @address,
                 @phone_primary, @phone_2, @phone_3, @created_by)
       `, {
         slug:          { type: sql.Char,     value: slug },
@@ -87,6 +87,7 @@ router.post(
         last_name:     { type: sql.NVarChar, value: last_name },
         designation:   { type: sql.NVarChar, value: designation },
         email:         { type: sql.NVarChar, value: email },
+        address:       { type: sql.NVarChar, value: address || null },
         phone_primary: { type: sql.NVarChar, value: phone_primary },
         phone_2:       { type: sql.NVarChar, value: phone_2  || null },
         phone_3:       { type: sql.NVarChar, value: phone_3  || null },
@@ -121,7 +122,8 @@ router.post(
 //  POST /api/admin/profiles/bulk
 //  Accepts a CSV file (field name "file") with columns:
 //  first_name, last_name, designation, email, phone_primary, phone_2, phone_3
-//  (header names are matched case-insensitively; "Phone 2" etc. also work).
+//  and optionally address. Header names are matched case-insensitively;
+//  "Phone 2", "Full Address" etc. also work.
 //
 //  Each row is validated with the same rules as single-profile
 //  creation. Rows that fail validation are skipped and reported —
@@ -179,10 +181,10 @@ router.post('/profiles/bulk', adminApiLimiter, handleCsvUpload, async (req, res)
       const slug = uuidv4();
       const result = await query(`
         INSERT INTO profiles
-          (slug, first_name, last_name, designation, email,
+          (slug, first_name, last_name, designation, email, address,
            phone_primary, phone_2, phone_3, created_by)
         OUTPUT INSERTED.id
-        VALUES (@slug, @first_name, @last_name, @designation, @email,
+        VALUES (@slug, @first_name, @last_name, @designation, @email, @address,
                 @phone_primary, @phone_2, @phone_3, @created_by)
       `, {
         slug:          { type: sql.Char,     value: slug },
@@ -190,6 +192,7 @@ router.post('/profiles/bulk', adminApiLimiter, handleCsvUpload, async (req, res)
         last_name:     { type: sql.NVarChar, value: clean.last_name },
         designation:   { type: sql.NVarChar, value: clean.designation },
         email:         { type: sql.NVarChar, value: clean.email },
+        address:       { type: sql.NVarChar, value: clean.address },
         phone_primary: { type: sql.NVarChar, value: clean.phone_primary },
         phone_2:       { type: sql.NVarChar, value: clean.phone_2 },
         phone_3:       { type: sql.NVarChar, value: clean.phone_3 },
@@ -247,7 +250,7 @@ router.put(
     try {
       const { slug } = req.params;
       const {
-        first_name, last_name, designation, email,
+        first_name, last_name, designation, email, address,
         phone_primary, phone_2, phone_3, is_active,
       } = req.body;
 
@@ -265,6 +268,7 @@ router.put(
             last_name     = @last_name,
             designation   = @designation,
             email         = @email,
+            address       = @address,
             phone_primary = @phone_primary,
             phone_2       = @phone_2,
             phone_3       = @phone_3,
@@ -276,6 +280,7 @@ router.put(
         last_name:     { type: sql.NVarChar, value: last_name },
         designation:   { type: sql.NVarChar, value: designation },
         email:         { type: sql.NVarChar, value: email },
+        address:       { type: sql.NVarChar, value: address || null },
         phone_primary: { type: sql.NVarChar, value: phone_primary },
         phone_2:       { type: sql.NVarChar, value: phone_2  || null },
         phone_3:       { type: sql.NVarChar, value: phone_3  || null },

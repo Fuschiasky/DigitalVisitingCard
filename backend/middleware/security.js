@@ -71,7 +71,7 @@ function stripHtml(str) {
 }
 
 function sanitiseProfile(req, res, next) {
-  const fields = ['first_name', 'last_name', 'designation', 'email', 'phone_primary', 'phone_2', 'phone_3'];
+  const fields = ['first_name', 'last_name', 'designation', 'email', 'address', 'phone_primary', 'phone_2', 'phone_3'];
   for (const f of fields) {
     if (req.body[f] !== undefined) {
       req.body[f] = stripHtml(req.body[f]);
@@ -99,6 +99,9 @@ const profileValidationRules = [
     .trim().notEmpty().withMessage('Email is required')
     .isEmail().withMessage('Invalid email address')
     .isLength({ max: 255 }).withMessage('Email too long'),
+  body('address')
+    .trim().notEmpty().withMessage('Address is required')
+    .isLength({ max: 500 }).withMessage('Address too long'),
   body('phone_primary')
     .trim().notEmpty().withMessage('Primary phone is required')
     .matches(PHONE_RE).withMessage('Invalid primary phone number'),
@@ -166,6 +169,11 @@ function validateProfileRow(row) {
   else if (!validator.isEmail(email)) errors.push('Invalid email address');
   else if (email.length > 255) errors.push('Email too long');
   clean.email = email;
+
+  const address = stripHtml(row.address || '').trim();
+  if (!address) errors.push('Address is required');
+  else if (address.length > 500) errors.push('Address too long');
+  clean.address = address;
 
   const phone_primary = stripHtml(row.phone_primary || '').trim();
   if (!phone_primary) errors.push('Primary phone is required');

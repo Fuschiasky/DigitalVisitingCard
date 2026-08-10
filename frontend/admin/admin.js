@@ -177,11 +177,15 @@ function renderTable(profiles) {
     var profileUrl = origin + '/p/' + p.slug;
     var shortUrl   = '/p/' + p.slug.slice(0, 8) + '…';
 
+    var addressPreview = p.address ? p.address.replace(/\s*\n\s*/g, ', ') : '';
+    if (addressPreview.length > 40) addressPreview = addressPreview.slice(0, 40) + '…';
+
     rows += '<tr data-slug="' + esc(p.slug) + '">'
       + '<td><div class="avatar-sm">' + esc(initials) + '</div></td>'
       + '<td><strong>' + esc(p.first_name) + ' ' + esc(p.last_name) + '</strong></td>'
       + '<td style="color:var(--text-dim)">' + esc(p.designation) + '</td>'
       + '<td>' + esc(p.email) + '</td>'
+      + '<td style="color:var(--text-dim)" title="' + esc(p.address || '') + '">' + (addressPreview ? esc(addressPreview) : '—') + '</td>'
       + '<td>' + esc(p.phone_primary) + '</td>'
       + '<td><span class="badge ' + (p.is_active ? 'badge-active' : 'badge-inactive') + '">'
       +   (p.is_active ? 'Active' : 'Inactive') + '</span></td>'
@@ -231,6 +235,7 @@ function openModal(slug) {
           $('m-lname').value = p.last_name     || '';
           $('m-desg').value  = p.designation   || '';
           $('m-email').value = p.email         || '';
+          $('m-address').value = p.address     || '';
           $('m-ph1').value   = p.phone_primary || '';
           $('m-ph2').value   = p.phone_2       || '';
           $('m-ph3').value   = p.phone_3       || '';
@@ -252,7 +257,7 @@ function closeModal() {
 }
 
 function clearForm() {
-  ['m-fname','m-lname','m-desg','m-email','m-ph1','m-ph2','m-ph3'].forEach(function(id) {
+  ['m-fname','m-lname','m-desg','m-email','m-address','m-ph1','m-ph2','m-ph3'].forEach(function(id) {
     $(id).value = '';
   });
 }
@@ -267,12 +272,13 @@ function saveProfile() {
     last_name:     $('m-lname').value.trim(),
     designation:   $('m-desg').value.trim(),
     email:         $('m-email').value.trim(),
+    address:       $('m-address').value.trim() || null,
     phone_primary: $('m-ph1').value.trim(),
     phone_2:       $('m-ph2').value.trim() || null,
     phone_3:       $('m-ph3').value.trim() || null,
   };
 
-  if (!payload.first_name || !payload.last_name || !payload.designation || !payload.email || !payload.phone_primary) {
+  if (!payload.first_name || !payload.last_name || !payload.designation || !payload.email || !payload.address || !payload.phone_primary) {
     showErr('modal-err', 'Please fill in all required fields (*).');
     return;
   }

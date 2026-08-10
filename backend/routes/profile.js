@@ -12,7 +12,7 @@ router.get('/:slug', publicLimiter, requireValidSlug, async (req, res) => {
     const { slug } = req.params;
 
     const result = await query(`
-      SELECT first_name, last_name, designation, email,
+      SELECT first_name, last_name, designation, email, address,
              phone_primary, phone_2, phone_3,
              photo_path
       FROM profiles
@@ -32,6 +32,7 @@ router.get('/:slug', publicLimiter, requireValidSlug, async (req, res) => {
       fullName:    `${p.first_name} ${p.last_name}`,
       designation: p.designation,
       email:       p.email,
+      address:     p.address || null,
       phones,
       photoUrl:    p.photo_path || null,
       initials:    `${p.first_name[0]}${p.last_name[0]}`.toUpperCase(),

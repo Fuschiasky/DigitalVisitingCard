@@ -50,6 +50,9 @@
     .field input { width: 100%; background: var(--white); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: inherit; font-size: 14px; padding: 12px 14px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
     .field input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-dim); }
     .field input::placeholder { color: var(--text-dim); }
+    .field textarea { width: 100%; background: var(--white); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: inherit; font-size: 14px; padding: 12px 14px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; resize: vertical; }
+    .field textarea:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-dim); }
+    .field textarea::placeholder { color: var(--text-dim); }
 
     /* ── Buttons ── */
     .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: none; border-radius: 10px; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 500; padding: 12px 20px; transition: opacity 0.15s, transform 0.1s; text-decoration: none; }
@@ -172,7 +175,7 @@
       <table>
         <thead>
           <tr>
-            <th></th><th>Name</th><th>Designation</th><th>Email</th><th>Phone</th>
+            <th></th><th>Name</th><th>Designation</th><th>Email</th><th>Address</th><th>Phone</th>
             <th>Status</th><th>Profile URL</th><th>Actions</th>
           </tr>
         </thead>
@@ -201,6 +204,10 @@
     </div>
     <div class="field"><label>Designation *</label><input id="m-desg" type="text" placeholder="Senior Engineer" /></div>
     <div class="field"><label>Email *</label><input id="m-email" type="email" placeholder="priya.sharma@company.com" /></div>
+    <div class="field">
+      <label>Address *</label>
+      <textarea id="m-address" rows="3" placeholder="123 MG Road, Bengaluru, Karnataka 560001"></textarea>
+    </div>
     <div class="field"><label>Primary Phone *</label><input id="m-ph1" type="tel" placeholder="+91 98765 43210" /></div>
     <div class="row-2">
       <div class="field"><label>Phone 2 (optional)</label><input id="m-ph2" type="tel" placeholder="+91 98765 43211" /></div>
@@ -241,7 +248,7 @@
     <div class="err-msg" id="bulk-err"></div>
     <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px;line-height:1.6">
       Upload a CSV with columns <code>first_name</code>, <code>last_name</code>, <code>designation</code>,
-      <code>email</code>, <code>phone_primary</code>, and optionally <code>phone_2</code>, <code>phone_3</code>.
+      <code>email</code>, <code>address</code>, <code>phone_primary</code>, and optionally <code>phone_2</code>, <code>phone_3</code>.
       Rows with errors are skipped and listed below — the rest are still created.
     </p>
     <a href="/admin/bulk-upload-template.csv" download style="display:inline-block;margin-bottom:16px;font-size:13px;color:var(--gold);text-decoration:underline;">
