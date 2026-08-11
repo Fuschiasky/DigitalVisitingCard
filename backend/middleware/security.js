@@ -1,9 +1,43 @@
 'use strict';
 
 const helmet       = require('helmet');
-const rateLimit    = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const { body, validationResult } = require('express-validator');
 const validator = require('validator');
+
+// ─────────────────────────────────────────────
+//  Rate limiter key generator
+//
+//  Some reverse proxies (IIS/ARR observed in production here) forward
+//  a client address with the source port still attached, e.g.
+//  "203.0.113.5:54321" instead of "203.0.113.5". A port-suffixed value
+//  isn't a valid IP on its own, and is also a known rate-limit bypass:
+//  a client can "become a new IP" just by opening a fresh connection
+//  from a different ephemeral port. express-rate-limit validates for
+//  exactly this and refuses to run with the raw value (ERR_ERL_INVALID_IP_ADDRESS).
+//
+//  This strips a trailing ":<port>" if present, then defers to the
+//  library's own ipKeyGenerator helper rather than using the bare
+//  string — that helper correctly buckets IPv6 addresses by subnet
+//  instead of by exact address, which matters because many ISPs hand
+//  out a fresh IPv6 address per session/reboot from within the same
+//  subnet; keying on the exact address would let those users bypass
+//  the limiter the same way a raw port number would.
+// ─────────────────────────────────────────────
+function stripPort(ip) {
+  if (!ip) return ip;
+  // IPv4 with port: "203.0.113.5:54321" -> "203.0.113.5"
+  // IPv6 with port is normally bracketed: "[::1]:54321" -> "::1"
+  const bracketed = ip.match(/^\[(.+)\]:\d+$/);
+  if (bracketed) return bracketed[1];
+  const ipv4WithPort = ip.match(/^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}):\d+$/);
+  if (ipv4WithPort) return ipv4WithPort[1];
+  return ip;
+}
+
+function rateLimitKeyGenerator(req) {
+  return ipKeyGenerator(stripPort(req.ip));
+}
 
 // ─────────────────────────────────────────────
 //  Helmet — security headers
@@ -43,6 +77,7 @@ const publicLimiter = rateLimit({
   legacyHeaders:    false,
   message:          { error: 'Too many requests, slow down.' },
   skip: (req) => req.method === 'OPTIONS',
+  keyGenerator:     rateLimitKeyGenerator,
 });
 
 const adminLoginLimiter = rateLimit({
@@ -51,6 +86,7 @@ const adminLoginLimiter = rateLimit({
   standardHeaders:  true,
   legacyHeaders:    false,
   message:          { error: 'Too many login attempts. Wait 15 minutes.' },
+  keyGenerator:     rateLimitKeyGenerator,
 });
 
 const adminApiLimiter = rateLimit({
@@ -59,6 +95,7 @@ const adminApiLimiter = rateLimit({
   standardHeaders:  true,
   legacyHeaders:    false,
   message:          { error: 'Too many requests.' },
+  keyGenerator:     rateLimitKeyGenerator,
 });
 
 // ─────────────────────────────────────────────
