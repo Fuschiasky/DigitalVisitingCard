@@ -30,7 +30,6 @@ CREATE TABLE profiles (
   phone_primary NVARCHAR(30)  NOT NULL,
   phone_2       NVARCHAR(30)  NULL,
   phone_3       NVARCHAR(30)  NULL,
-  photo_path    NVARCHAR(500) NULL,
   created_by    INT           NOT NULL,
   created_at    DATETIME2     NOT NULL DEFAULT GETUTCDATE(),
   updated_at    DATETIME2     NOT NULL DEFAULT GETUTCDATE(),

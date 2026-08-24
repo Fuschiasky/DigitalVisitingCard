@@ -2,11 +2,9 @@
 
 const router = require('express').Router();
 const { v4: uuidv4 } = require('uuid');
-const path   = require('path');
-const fs     = require('fs');
 const { query, sql } = require('../db/pool');
 const { requireAuth }        = require('../middleware/auth');
-const { upload, uploadCsv, verifyUploadedFile, UPLOAD_DIR } = require('../middleware/upload');
+const { uploadCsv } = require('../middleware/upload');
 const {
   profileValidationRules, validateRequest,
   sanitiseProfile, requireValidSlug, validateProfileRow,
@@ -17,9 +15,7 @@ const multer = require('multer');
 
 // Wraps uploadCsv.single('file') so a rejected MIME/extension or an
 // oversized file returns a clear 400 with the real reason, instead of
-// falling through to the app's generic 500 error handler (which is what
-// happens today on the equivalent photo-upload route — same underlying
-// gap, fixed here so the new bulk feature doesn't inherit it).
+// falling through to the app's generic 500 error handler.
 function handleCsvUpload(req, res, next) {
   uploadCsv.single('file')(req, res, (err) => {
     if (!err) return next();
@@ -45,7 +41,6 @@ router.get('/profiles', async (req, res) => {
     const result = await query(`
       SELECT id, slug, first_name, last_name, designation, email, address,
              phone_primary, phone_2, phone_3,
-             CASE WHEN photo_path IS NOT NULL THEN 1 ELSE 0 END AS has_photo,
              is_active, created_at, updated_at
       FROM profiles
       ORDER BY created_at DESC
@@ -311,7 +306,7 @@ router.delete('/profiles/:slug', requireValidSlug, async (req, res) => {
   try {
     const { slug } = req.params;
     const existing = await query(
-      'SELECT id, photo_path FROM profiles WHERE slug = @slug',
+      'SELECT id FROM profiles WHERE slug = @slug',
       { slug: { type: sql.Char, value: slug } }
     );
     if (!existing.recordset.length) {
@@ -319,11 +314,6 @@ router.delete('/profiles/:slug', requireValidSlug, async (req, res) => {
     }
 
     const profile = existing.recordset[0];
-
-    if (profile.photo_path && UPLOAD_DIR) {
-      const filePath = path.join(UPLOAD_DIR, path.basename(profile.photo_path));
-      fs.unlink(filePath, () => {});
-    }
 
     await query(
       'DELETE FROM profiles WHERE slug = @slug',
@@ -343,104 +333,6 @@ router.delete('/profiles/:slug', requireValidSlug, async (req, res) => {
     res.json({ message: 'Profile deleted' });
   } catch (err) {
     console.error('[ADMIN] Delete error:', err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-// ─────────────────────────────────────────────
-//  POST /api/admin/profiles/:slug/photo
-// ─────────────────────────────────────────────
-router.post(
-  '/profiles/:slug/photo',
-  requireValidSlug,
-  upload.single('photo'),
-  verifyUploadedFile,
-  async (req, res) => {
-    try {
-      const { slug } = req.params;
-      if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-
-      const existing = await query(
-        'SELECT id, photo_path FROM profiles WHERE slug = @slug',
-        { slug: { type: sql.Char, value: slug } }
-      );
-      if (!existing.recordset.length) {
-        if (req.file.path) fs.unlinkSync(req.file.path);
-        return res.status(404).json({ error: 'Profile not found' });
-      }
-
-      const profile = existing.recordset[0];
-
-      // Remove old photo file if exists
-      if (profile.photo_path && UPLOAD_DIR) {
-        const old = path.join(UPLOAD_DIR, path.basename(profile.photo_path));
-        fs.unlink(old, () => {});
-      }
-
-      // IMPORTANT: Store URL path, not file path
-      const photoPath = `/uploads/${req.file.filename}`;
-
-      console.log('[ADMIN] File saved to:', req.file.path);
-      console.log('[ADMIN] Storing URL path:', photoPath);
-
-      // Update database with URL path
-      await query(
-        `UPDATE profiles 
-         SET photo_path = @photoPath
-         WHERE slug = @slug`,
-        {
-          photoPath: { type: sql.NVarChar, value: photoPath },
-          slug:      { type: sql.Char,     value: slug },
-        }
-      );
-
-      await query(`
-        INSERT INTO audit_log (admin_id, action, target_id, ip_address)
-        VALUES (@adminId, 'PHOTO_UPLOADED', @targetId, @ip)
-      `, {
-        adminId:  { type: sql.Int,      value: req.admin.id },
-        targetId: { type: sql.Int,      value: profile.id },
-        ip:       { type: sql.NVarChar, value: req.ip },
-      });
-
-      res.json({ message: 'Photo uploaded', photoUrl: photoPath });
-    } catch (err) {
-      if (req.file && req.file.path) fs.unlink(req.file.path, () => {});
-      console.error('[ADMIN] Photo upload error:', err);
-      res.status(500).json({ error: 'Server error' });
-    }
-  }
-);
-
-
-// ─────────────────────────────────────────────
-//  DELETE /api/admin/profiles/:slug/photo
-// ─────────────────────────────────────────────
-router.delete('/profiles/:slug/photo', requireValidSlug, async (req, res) => {
-  try {
-    const { slug } = req.params;
-    const existing = await query(
-      'SELECT id, photo_path FROM profiles WHERE slug = @slug',
-      { slug: { type: sql.Char, value: slug } }
-    );
-    if (!existing.recordset.length) {
-      return res.status(404).json({ error: 'Profile not found' });
-    }
-
-    const profile = existing.recordset[0];
-    if (profile.photo_path && UPLOAD_DIR) {
-      const filePath = path.join(UPLOAD_DIR, path.basename(profile.photo_path));
-      fs.unlink(filePath, () => {});
-    }
-
-    await query(
-      'UPDATE profiles SET photo_path = NULL WHERE slug = @slug',
-      { slug: { type: sql.Char, value: slug } }
-    );
-
-    res.json({ message: 'Photo removed' });
-  } catch (err) {
-    console.error('[ADMIN] Remove photo error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });

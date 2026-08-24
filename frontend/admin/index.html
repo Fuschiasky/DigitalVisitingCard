@@ -89,8 +89,6 @@
     td { padding: 14px 16px; border-bottom: 1px solid rgba(13,13,13,0.05); vertical-align: middle; color: var(--text); }
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: rgba(201,168,76,0.04); }
-    .avatar-sm { width: 36px; height: 36px; border-radius: 50%; background: var(--gold-dim); display: inline-flex; align-items: center; justify-content: center; font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 14px; color: var(--gold); overflow: hidden; flex-shrink: 0; border: 1px solid var(--gold-border); }
-    .avatar-sm img { width: 100%; height: 100%; object-fit: cover; }
     .badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; }
     .badge-active   { background: rgba(42,157,92,0.1);  color: var(--success); }
     .badge-inactive { background: rgba(217,48,37,0.09); color: var(--danger); }
@@ -175,7 +173,7 @@
       <table>
         <thead>
           <tr>
-            <th></th><th>Name</th><th>Designation</th><th>Email</th><th>Address</th><th>Phone</th>
+            <th>Name</th><th>Designation</th><th>Email</th><th>Address</th><th>Phone</th>
             <th>Status</th><th>Profile URL</th><th>Actions</th>
           </tr>
         </thead>
@@ -212,15 +210,6 @@
     <div class="row-2">
       <div class="field"><label>Phone 2 (optional)</label><input id="m-ph2" type="tel" placeholder="+91 98765 43211" /></div>
       <div class="field"><label>Phone 3 (optional)</label><input id="m-ph3" type="tel" placeholder="+91 98765 43212" /></div>
-    </div>
-    <div id="photo-section" style="display:none">
-      <div class="field">
-        <label>Profile Photo (JPEG / PNG / WebP, max 5 MB)</label>
-        <div class="photo-zone" id="photo-zone" tabindex="0">
-          <div id="photo-zone-text">Click to upload photo</div>
-          <input id="photo-input" type="file" accept="image/jpeg,image/png,image/webp" style="display:none" />
-        </div>
-      </div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" id="modal-cancel">Cancel</button>

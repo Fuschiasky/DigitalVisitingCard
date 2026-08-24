@@ -13,8 +13,7 @@ router.get('/:slug', publicLimiter, requireValidSlug, async (req, res) => {
 
     const result = await query(`
       SELECT first_name, last_name, designation, email, address,
-             phone_primary, phone_2, phone_3,
-             photo_path
+             phone_primary, phone_2, phone_3
       FROM profiles
       WHERE slug = @slug AND is_active = 1
     `, { slug: { type: sql.Char, value: slug } });
@@ -34,8 +33,6 @@ router.get('/:slug', publicLimiter, requireValidSlug, async (req, res) => {
       email:       p.email,
       address:     p.address || null,
       phones,
-      photoUrl:    p.photo_path || null,
-      initials:    `${p.first_name[0]}${p.last_name[0]}`.toUpperCase(),
     });
   } catch (err) {
     console.error('[PROFILE] Fetch error:', err);

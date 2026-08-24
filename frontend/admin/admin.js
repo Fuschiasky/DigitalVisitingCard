@@ -172,8 +172,6 @@ function renderTable(profiles) {
 
   for (var i = 0; i < profiles.length; i++) {
     var p        = profiles[i];
-    var initials = ((p.first_name || '')[0] || '') + ((p.last_name || '')[0] || '');
-    initials     = initials.toUpperCase();
     var profileUrl = origin + '/p/' + p.slug;
     var shortUrl   = '/p/' + p.slug.slice(0, 8) + '…';
 
@@ -181,7 +179,6 @@ function renderTable(profiles) {
     if (addressPreview.length > 40) addressPreview = addressPreview.slice(0, 40) + '…';
 
     rows += '<tr data-slug="' + esc(p.slug) + '">'
-      + '<td><div class="avatar-sm">' + esc(initials) + '</div></td>'
       + '<td><strong>' + esc(p.first_name) + ' ' + esc(p.last_name) + '</strong></td>'
       + '<td style="color:var(--text-dim)">' + esc(p.designation) + '</td>'
       + '<td>' + esc(p.email) + '</td>'
@@ -221,7 +218,6 @@ function openModal(slug) {
   hideMsg('modal-err');
   hideMsg('modal-ok');
   $('modal-title').textContent = slug ? 'Edit Profile' : 'New Profile';
-  $('photo-section').style.display = slug ? 'block' : 'none';
   clearForm();
 
   if (slug) {
@@ -251,9 +247,6 @@ function openModal(slug) {
 function closeModal() {
   $('profile-modal').classList.remove('open');
   editingSlug = null;
-  $('photo-input').value = '';
-  $('photo-zone').className = 'photo-zone';
-  $('photo-zone-text').textContent = 'Click to upload photo';
 }
 
 function clearForm() {
@@ -305,20 +298,6 @@ function saveProfile() {
       }
 
       savedSlug = savedSlug || (data.profile && data.profile.slug);
-
-      var file = $('photo-input').files[0];
-      if (file && savedSlug) {
-        var fd = new FormData();
-        fd.append('photo', file);
-        return api('POST', '/api/admin/profiles/' + savedSlug + '/photo', fd, false)
-        .then(function(pr) {
-          if (pr && !pr.ok) {
-            return pr.json().then(function(pd) {
-              showErr('modal-err', 'Profile saved but photo failed: ' + pd.error);
-            });
-          }
-        });
-      }
     });
   })
   .then(function() {
@@ -339,23 +318,6 @@ function saveProfile() {
     btn.disabled = false;
     btn.textContent = 'Save Profile';
   });
-}
-
-/* ── Photo upload ── */
-function handlePhotoFile(file) {
-  if (!['image/jpeg','image/png','image/webp'].includes(file.type)) {
-    showErr('modal-err', 'Only JPEG, PNG, or WebP images allowed.');
-    return;
-  }
-  if (file.size > 5 * 1024 * 1024) {
-    showErr('modal-err', 'Image must be smaller than 5 MB.');
-    return;
-  }
-  $('photo-zone').className = 'photo-zone has-file';
-  $('photo-zone-text').textContent = '✓ ' + file.name;
-  var dt = new DataTransfer();
-  dt.items.add(file);
-  $('photo-input').files = dt.files;
 }
 
 /* ── Delete modal ── */
@@ -508,29 +470,6 @@ document.addEventListener('DOMContentLoaded', function() {
     $('delete-modal').classList.remove('open');
   });
   $('del-confirm').addEventListener('click', doDelete);
-
-  var photoZone  = $('photo-zone');
-  var photoInput = $('photo-input');
-
-  photoZone.addEventListener('click', function() { photoInput.click(); });
-  photoZone.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' || e.key === ' ') photoInput.click();
-  });
-  photoZone.addEventListener('dragover', function(e) {
-    e.preventDefault();
-    photoZone.style.borderColor = 'var(--gold)';
-  });
-  photoZone.addEventListener('dragleave', function() {
-    photoZone.style.borderColor = '';
-  });
-  photoZone.addEventListener('drop', function(e) {
-    e.preventDefault();
-    photoZone.style.borderColor = '';
-    if (e.dataTransfer.files[0]) handlePhotoFile(e.dataTransfer.files[0]);
-  });
-  photoInput.addEventListener('change', function() {
-    if (photoInput.files[0]) handlePhotoFile(photoInput.files[0]);
-  });
 
   $('bulk-cancel').addEventListener('click', closeBulkModal);
   $('bulk-modal').addEventListener('click', function(e) {

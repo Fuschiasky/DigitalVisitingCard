@@ -42,43 +42,6 @@ function renderProfile(data) {
   card.className = 'card';
   card.setAttribute('role', 'main');
 
-  /* Avatar */
-  var avatarWrap  = document.createElement('div');
-  avatarWrap.className = 'avatar-wrap';
-  avatarWrap.setAttribute('aria-label', 'Profile photo');
-
-  var avatarInner = document.createElement('div');
-  avatarInner.className = 'avatar-inner';
-
-  if (data.photoUrl) {
-    var img = document.createElement('img');
-    img.className = 'avatar-img';
-    img.src = data.photoUrl;
-    img.alt = esc(data.fullName) + ' photo';
-    img.loading = 'eager';
-
-    var fallback = document.createElement('span');
-    fallback.className = 'avatar-initials';
-    fallback.textContent = data.initials || '';
-    fallback.style.display = 'none';
-
-    img.addEventListener('error', function() {
-      img.style.display = 'none';
-      fallback.style.display = 'flex';
-    });
-
-    avatarInner.appendChild(img);
-    avatarInner.appendChild(fallback);
-  } else {
-    var initSpan = document.createElement('span');
-    initSpan.className = 'avatar-initials';
-    initSpan.textContent = data.initials || '';
-    avatarInner.appendChild(initSpan);
-  }
-
-  avatarWrap.appendChild(avatarInner);
-  card.appendChild(avatarWrap);
-
   /* Name */
   var nameEl = document.createElement('h1');
   nameEl.className = 'name';
