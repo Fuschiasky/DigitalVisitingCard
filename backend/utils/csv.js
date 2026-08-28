@@ -86,11 +86,11 @@ function parseProfileCsv(buffer) {
 
   if (!fieldMap.includes('first_name') || !fieldMap.includes('last_name') ||
       !fieldMap.includes('designation') || !fieldMap.includes('email') ||
-      !fieldMap.includes('address') || !fieldMap.includes('phone_primary')) {
+      !fieldMap.includes('address')) {
     return {
       rows: [],
       headerError:
-        'CSV header must include first_name, last_name, designation, email, address, and phone_primary columns',
+        'CSV header must include first_name, last_name, designation, email, and address columns',
     };
   }
 

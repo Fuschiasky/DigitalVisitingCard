@@ -47,7 +47,7 @@ const helmetConfig = helmet({
     directives: {
       defaultSrc:     ["'self'"],
       scriptSrc:      ["'self'"],
-      styleSrc:       ["'self'", "'unsafe-inline'"],   // allow inline styles for avatar colour
+      styleSrc:       ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       imgSrc:         ["'self'", 'data:'],
       connectSrc:     ["'self'"],
       fontSrc:        ["'self'", 'https://fonts.gstatic.com'],
@@ -140,8 +140,8 @@ const profileValidationRules = [
     .trim().notEmpty().withMessage('Address is required')
     .isLength({ max: 500 }).withMessage('Address too long'),
   body('phone_primary')
-    .trim().notEmpty().withMessage('Primary phone is required')
-    .matches(PHONE_RE).withMessage('Invalid primary phone number'),
+    .optional({ nullable: true, checkFalsy: true })
+    .trim().matches(PHONE_RE).withMessage('Invalid primary phone number'),
   body('phone_2')
     .optional({ nullable: true, checkFalsy: true })
     .trim().matches(PHONE_RE).withMessage('Invalid phone 2'),
@@ -213,9 +213,8 @@ function validateProfileRow(row) {
   clean.address = address;
 
   const phone_primary = stripHtml(row.phone_primary || '').trim();
-  if (!phone_primary) errors.push('Primary phone is required');
-  else if (!PHONE_RE.test(phone_primary)) errors.push('Invalid primary phone number');
-  clean.phone_primary = phone_primary;
+  if (phone_primary && !PHONE_RE.test(phone_primary)) errors.push('Invalid primary phone number');
+  clean.phone_primary = phone_primary || null;
 
   const phone_2 = stripHtml(row.phone_2 || '').trim();
   if (phone_2 && !PHONE_RE.test(phone_2)) errors.push('Invalid phone 2');

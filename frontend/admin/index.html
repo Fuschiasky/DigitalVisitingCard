@@ -206,7 +206,7 @@
       <label>Address *</label>
       <textarea id="m-address" rows="3" placeholder="123 MG Road, Bengaluru, Karnataka 560001"></textarea>
     </div>
-    <div class="field"><label>Primary Phone *</label><input id="m-ph1" type="tel" placeholder="+91 98765 43210" /></div>
+    <div class="field"><label>Primary Phone (optional)</label><input id="m-ph1" type="tel" placeholder="+91 98765 43210" /></div>
     <div class="row-2">
       <div class="field"><label>Phone 2 (optional)</label><input id="m-ph2" type="tel" placeholder="+91 98765 43211" /></div>
       <div class="field"><label>Phone 3 (optional)</label><input id="m-ph3" type="tel" placeholder="+91 98765 43212" /></div>
@@ -237,7 +237,7 @@
     <div class="err-msg" id="bulk-err"></div>
     <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px;line-height:1.6">
       Upload a CSV with columns <code>first_name</code>, <code>last_name</code>, <code>designation</code>,
-      <code>email</code>, <code>address</code>, <code>phone_primary</code>, and optionally <code>phone_2</code>, <code>phone_3</code>.
+      <code>email</code>, <code>address</code>, and optionally <code>phone_primary</code>, <code>phone_2</code>, <code>phone_3</code>.
       Rows with errors are skipped and listed below — the rest are still created.
     </p>
     <a href="/admin/bulk-upload-template.csv" download style="display:inline-block;margin-bottom:16px;font-size:13px;color:var(--gold);text-decoration:underline;">
@@ -261,4 +261,4 @@
 
 <script src="/admin.js"></script>
 </body>
-</html>
+</html> 

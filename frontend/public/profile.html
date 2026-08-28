@@ -28,7 +28,6 @@
       --radius:    20px;
     }
     html, body {
-      min-height: 100vh;
       background: var(--bg);
       color: var(--text);
       font-family: 'DM Sans', system-ui, sans-serif;
@@ -36,9 +35,13 @@
       overflow-x: hidden;
       width: 100%;
     }
-    .page-content {
+    .page-wrap {
       min-height: 100vh;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
+      width: 100%;
+    }
+    .page-content {
+      display: flex; flex-direction: column; align-items: center;
       width: 100%;
     }
     .glow {
@@ -135,18 +138,31 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     @media (max-width: 480px) {
-      .card { padding: 40px 22px 32px; }
-      .name { font-size: 26px; }
-      .phone-item { padding: 12px 14px; gap: 10px; }
+      .card { padding: 28px 20px 24px; }
+      .name { font-size: 24px; margin-bottom: 6px; }
+      .designation { margin-bottom: 18px; }
+      .divider { margin: 0 auto 18px; }
+      .phones { gap: 8px; }
+      .phone-item { padding: 10px 12px; gap: 10px; }
       .phone-number { font-size: 14px; }
-      .brand-logo { margin-bottom: 22px; }
-      .brand-logo img { width: 160px; }
+      .card-footer { margin-top: 16px; }
+      .brand-logo { margin-bottom: 14px; }
+      .brand-logo img { width: 140px; }
+      .brand-carousels { margin-top: 14px; }
+      .carousel-track-wrap { margin-bottom: 8px; }
     }
     @media (max-width: 360px) {
-      .card { padding: 32px 16px 28px; }
-      .name { font-size: 23px; }
-      .brand-logo { margin-bottom: 18px; }
-      .brand-logo img { width: 130px; }
+      .card { padding: 22px 14px 18px; }
+      .name { font-size: 21px; }
+      .designation { margin-bottom: 14px; }
+      .divider { margin: 0 auto 14px; }
+      .phones { gap: 6px; }
+      .phone-item { padding: 8px 10px; }
+      .card-footer { margin-top: 12px; }
+      .brand-logo { margin-bottom: 10px; }
+      .brand-logo img { width: 115px; }
+      .brand-carousels { margin-top: 10px; }
+      .carousel-track-wrap { margin-bottom: 6px; }
     }
 
     .brand-carousels {
@@ -197,12 +213,12 @@
       }
     }
     @media (max-width: 480px) {
-      .carousel-track img { height: 24px; min-width: 48px; }
-      .carousel-track { gap: 18px; }
-    }
-    @media (max-width: 360px) {
       .carousel-track img { height: 20px; min-width: 40px; }
       .carousel-track { gap: 14px; }
+    }
+    @media (max-width: 360px) {
+      .carousel-track img { height: 17px; min-width: 34px; }
+      .carousel-track { gap: 10px; }
     }
     @media (min-width: 768px) {
       .carousel-track img { height: 36px; min-width: 76px; }
@@ -220,19 +236,20 @@
 </head>
 <body>
 <div class="glow" aria-hidden="true"></div>
-<div class="page-content">
-  <div class="brand-logo">
-    <img src="/diageo-logo.png" alt="Diageo India" width="732" height="341" />
-  </div>
-  <div id="app">
-    <div class="state-card" aria-live="polite">
-      <div class="spinner"></div>
-      <div class="state-title">Loading profile…</div>
+<div class="page-wrap">
+  <div class="page-content">
+    <div class="brand-logo">
+      <img src="/diageo-logo.png" alt="Diageo India" width="732" height="341" />
+    </div>
+    <div id="app">
+      <div class="state-card" aria-live="polite">
+        <div class="spinner"></div>
+        <div class="state-title">Loading profile…</div>
+      </div>
     </div>
   </div>
-</div>
 
-<div class="brand-carousels" aria-hidden="true">
+  <div class="brand-carousels" aria-hidden="true">
   <div class="carousel-track-wrap">
     <div class="carousel-track scroll-rtl">
       <img src="/brands/mcdowells.jpg" alt="McDowell's" />
@@ -265,6 +282,7 @@
       <img src="/brands/baileys.svg" alt="Baileys" />
     </div>
   </div>
+</div>
 </div>
 
 <script src="/profile.js"></script>

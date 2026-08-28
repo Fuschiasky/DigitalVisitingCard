@@ -27,7 +27,7 @@ CREATE TABLE profiles (
   designation   NVARCHAR(200) NOT NULL,
   email         NVARCHAR(255) NOT NULL,
   address       NVARCHAR(500) NOT NULL,
-  phone_primary NVARCHAR(30)  NOT NULL,
+  phone_primary NVARCHAR(30)  NULL,
   phone_2       NVARCHAR(30)  NULL,
   phone_3       NVARCHAR(30)  NULL,
   created_by    INT           NOT NULL,

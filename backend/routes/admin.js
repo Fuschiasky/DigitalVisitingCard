@@ -83,7 +83,7 @@ router.post(
         designation:   { type: sql.NVarChar, value: designation },
         email:         { type: sql.NVarChar, value: email },
         address:       { type: sql.NVarChar, value: address || null },
-        phone_primary: { type: sql.NVarChar, value: phone_primary },
+        phone_primary: { type: sql.NVarChar, value: phone_primary || null },
         phone_2:       { type: sql.NVarChar, value: phone_2  || null },
         phone_3:       { type: sql.NVarChar, value: phone_3  || null },
         created_by:    { type: sql.Int,      value: req.admin.id },
@@ -116,9 +116,9 @@ router.post(
 // ─────────────────────────────────────────────
 //  POST /api/admin/profiles/bulk
 //  Accepts a CSV file (field name "file") with columns:
-//  first_name, last_name, designation, email, phone_primary, phone_2, phone_3
-//  and optionally address. Header names are matched case-insensitively;
-//  "Phone 2", "Full Address" etc. also work.
+//  first_name, last_name, designation, email, address, and optionally
+//  phone_primary, phone_2, phone_3. Header names are matched
+//  case-insensitively; "Phone 2", "Full Address" etc. also work.
 //
 //  Each row is validated with the same rules as single-profile
 //  creation. Rows that fail validation are skipped and reported —
@@ -276,7 +276,7 @@ router.put(
         designation:   { type: sql.NVarChar, value: designation },
         email:         { type: sql.NVarChar, value: email },
         address:       { type: sql.NVarChar, value: address || null },
-        phone_primary: { type: sql.NVarChar, value: phone_primary },
+        phone_primary: { type: sql.NVarChar, value: phone_primary || null },
         phone_2:       { type: sql.NVarChar, value: phone_2  || null },
         phone_3:       { type: sql.NVarChar, value: phone_3  || null },
         is_active:     { type: sql.TinyInt,  value: is_active !== undefined ? (is_active ? 1 : 0) : 1 },

@@ -183,7 +183,7 @@ function renderTable(profiles) {
       + '<td style="color:var(--text-dim)">' + esc(p.designation) + '</td>'
       + '<td>' + esc(p.email) + '</td>'
       + '<td style="color:var(--text-dim)" title="' + esc(p.address || '') + '">' + (addressPreview ? esc(addressPreview) : '—') + '</td>'
-      + '<td>' + esc(p.phone_primary) + '</td>'
+      + '<td>' + (p.phone_primary ? esc(p.phone_primary) : '—') + '</td>'
       + '<td><span class="badge ' + (p.is_active ? 'badge-active' : 'badge-inactive') + '">'
       +   (p.is_active ? 'Active' : 'Inactive') + '</span></td>'
       + '<td><span class="url-chip" data-url="' + esc(profileUrl) + '" title="' + esc(profileUrl) + '">&#128203; ' + esc(shortUrl) + '</span></td>'
@@ -271,7 +271,7 @@ function saveProfile() {
     phone_3:       $('m-ph3').value.trim() || null,
   };
 
-  if (!payload.first_name || !payload.last_name || !payload.designation || !payload.email || !payload.address || !payload.phone_primary) {
+  if (!payload.first_name || !payload.last_name || !payload.designation || !payload.email || !payload.address) {
     showErr('modal-err', 'Please fill in all required fields (*).');
     return;
   }
