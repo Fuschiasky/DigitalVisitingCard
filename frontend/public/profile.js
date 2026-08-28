@@ -29,6 +29,68 @@ function esc(s) {
     .replace(/"/g, '&quot;');
 }
 
+/* ── vCard export ──
+   Runs entirely client-side from data already fetched to render the
+   page, so tapping "Save contact" needs no additional network request
+   and works even if the phone has no signal at that moment — the only
+   time connectivity is required is loading the profile page itself. */
+function vcardEscape(s) {
+  return String(s || '')
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\n/g, '\\n');
+}
+
+function buildVcard(data) {
+  var phones = Array.isArray(data.phones) ? data.phones.slice(0, 3) : [];
+  var phoneTypes = ['CELL', 'WORK', 'HOME'];
+  var lines = [];
+
+  lines.push('BEGIN:VCARD');
+  lines.push('VERSION:3.0');
+  lines.push('FN:' + vcardEscape(data.fullName));
+  /* No first/last name split is available (or wanted) here — the
+     structured N field is required by the vCard spec for a contact
+     to import cleanly on some clients, so it carries the full name
+     as a single component rather than being split. */
+  lines.push('N:' + vcardEscape(data.fullName) + ';;;;');
+  if (data.designation) lines.push('TITLE:' + vcardEscape(data.designation));
+  lines.push('ORG:Diageo India');
+
+  phones.forEach(function(ph, i) {
+    lines.push('TEL;TYPE=' + (phoneTypes[i] || 'VOICE') + ':' + vcardEscape(ph));
+  });
+
+  if (data.email) lines.push('EMAIL:' + vcardEscape(data.email));
+  if (data.address) lines.push('ADR;TYPE=WORK:;;' + vcardEscape(data.address) + ';;;;');
+
+  lines.push('END:VCARD');
+  /* vCard requires CRLF line endings, not bare \n. */
+  return lines.join('\r\n') + '\r\n';
+}
+
+function downloadVcard(data) {
+  var vcardText = buildVcard(data);
+  var blob = new Blob([vcardText], { type: 'text/vcard;charset=utf-8' });
+  var url  = URL.createObjectURL(blob);
+
+  var safeName = String(data.fullName || 'contact').replace(/[^\w\- ]+/g, '').trim() || 'contact';
+  var filename = safeName.replace(/\s+/g, '-') + '.vcf';
+
+  var link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+
+  /* Release the blob URL shortly after triggering the download —
+     immediate revocation can race with the browser actually starting
+     the download on some platforms, so this gives it a moment. */
+  setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+}
+
 function renderProfile(data) {
   var phones = Array.isArray(data.phones) ? data.phones.slice(0, 3) : [];
   var labels = ['Primary', 'Office', 'Other'];
@@ -162,6 +224,28 @@ function renderProfile(data) {
   footer.setAttribute('aria-hidden', 'true');
   footer.textContent = 'Tap to call or email';
   card.appendChild(footer);
+
+  /* Save contact — builds and downloads a vCard entirely client-side
+     from the data already in memory, so it works without a fresh
+     network request even if connectivity is lost after the page loaded. */
+  var saveBtn = document.createElement('button');
+  saveBtn.type = 'button';
+  saveBtn.className = 'save-contact-btn';
+  saveBtn.setAttribute('aria-label', 'Save ' + (data.fullName || 'contact') + ' to your contacts');
+
+  var saveBtnIcon = document.createElement('span');
+  saveBtnIcon.setAttribute('aria-hidden', 'true');
+  saveBtnIcon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>';
+
+  var saveBtnLabel = document.createElement('span');
+  saveBtnLabel.textContent = 'Save contact (.vcf)';
+
+  saveBtn.appendChild(saveBtnIcon);
+  saveBtn.appendChild(saveBtnLabel);
+  saveBtn.addEventListener('click', function() {
+    downloadVcard(data);
+  });
+  card.appendChild(saveBtn);
 
   app.innerHTML = '';
   app.appendChild(card);
